@@ -2,7 +2,7 @@ import pandas as pd
 import json
 
 # Cargar el dataset limpio desde el CSV
-df = pd.read_csv("C:/Users/alvar/TFG/chatbot-padel/datasets/dataset_padel_nuestro/palas_padelnuestro.csv")
+df = pd.read_csv("C:/Users/alvar/TFG/PADELMASTER BACKEND/dataset_padel_nuestro/palas_padelnuestro_actualizado/palas_padelnuestro_actualizado.csv")
 
 # Convertir cada fila en un documento JSON
 documentos = []
@@ -24,12 +24,14 @@ for _, row in df.iterrows():
         "Tipo de juego": row["Tipo de juego"],
         "Nivel de Juego": row["Nivel de Juego"],
         "Colección Jugadores": row["Colección Jugadores"],
+        'Enlace': row["Enlace"],
+        "Imagen": row["Imagen"],
         "Descripción": row["Descripción"],
     }
     documentos.append(documento)
 
 # Guardar en formato JSON
-with open("C:/Users/alvar/TFG/chatbot-padel/datasets/dataset_padel_nuestro/palas_padelnuestro.json", "w", encoding="utf-8") as f:
+with open("C:/Users/alvar/TFG/PADELMASTER BACKEND/dataset_padel_nuestro/palas_padelnuestro_actualizado.json", "w", encoding="utf-8") as f:
     json.dump(documentos, f, ensure_ascii=False, indent=4)
 
 print("Archivo JSON documental creado exitosamente.")

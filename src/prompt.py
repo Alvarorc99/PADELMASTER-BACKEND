@@ -170,31 +170,39 @@ prompt_template = PromptTemplate(
 prompt_template_recommendations = PromptTemplate(
     input_variables=["user_input", "filters"],
     template="""
-    Tienes una lista de palas filtradas según los siguientes criterios proporcionados por el usuario:
+    Eres un experto en pádel y especializado en recomendar palas de pádel. Tu tarea es mostrarle al usuario las palas que coincidan con los filtros proporcionados. No inventes datos.
 
-    Filtros aplicados:
+    Comienza asegurando al usuario que en base a los filtros que ha proporcionado, le vas a mostrar las palas recomendadas. Estos son los filtros aplicados:
     {filters}
 
-    Dile al usuario que has elegido esas palas en función de esos filtros, mencionándole los filtros.
+    A continuación, muestra las palas recomendadas:
+    {user_input}
+       
+    Para cada pala, muestra sus caracteristicas con el siguiente formato:
+    - En **formato subtítulo y subrayado**, el nombre de la pala usando el formato de subtítulo (`<h3>` o texto más pequeño).
+    - Justo debajo, la imagen de la pala (en tamaño reducido, por ejemplo 'width: 400px'): 
+    ![Imagen](Imagen)
+    - A continuación, una lista detallada de sus características:
+        - **Precio**: (Precio)
+        - **Balance**: (Balance)
+        - **Dureza**: (Dureza)
+        - **Acabado**: (Acabado)
+        - **Superficie**: (Superfície)
+        - **Tipo de juego**: (Tipo de juego)
+        - **Nivel de juego**: (Nivel de Juego)
+        - **Colección Jugadores**: (Colección Jugadores). Si un jugador profesional ha utilizado esta pala, menciónalo claramente.
+        - **Descripción**: Un resumen completo de la **descripción** basado en el atributo 'Descripción' del JSON.
+        - Un enlace para obtener más detalles: [Más detalles aquí](Enlace)
 
-    Las palas disponibles son las siguientes, junto con sus características y precios:
+    Presenta todas las palas recomendadas con la misma estructura y formato, una tras otra, sin numerarlas de forma continua (cada pala comienza desde el principio).  
+    Después de mostrar todas las palas:
+    **Comparativa**:
+    - Realiza una comparativa destacando las diferencias clave (por ejemplo, precio, balance o tipo de juego).
 
-    Palas recomendadas: {user_input}
+    **Recomendación final**:
+    - Basándote en la información, proporciona una recomendación final que ayude al usuario a tomar una decisión informada.
 
-    Tu tarea es proporcionar una recomendación clara y detallada de cada pala, basándote en los filtros proporcionados por el usuario. No inventes datos ni recomiendes palas que no estén en la lista de palas recomendadas.
-
-    Para cada pala recomendada, por favor incluye lo siguiente:
- 
-    1. **Nombre de la pala**.
-    2. **Precio**.
-    3. **Características clave**: Color, Balance, Dureza, Acabado, Superficie, Tipo de juego, Nivel de juego y si algún jugador profesional ha utilizado la pala (Colección de Jugadores).
-    4. **Descripción corta**: Explicación de por qué esta pala es adecuada para el perfil del usuario.
-
-    Además, proporciona lo siguiente:
-
-    1. **Comparativa**: Si hay varias palas que se ajustan a los filtros, realiza una pequeña comparación entre ellas en términos de características clave (precio, dureza, balance, etc.) para ayudar al usuario a tomar una decisión.
-    2. **Recomendación Final**: Basado en lo anterior, sugiere la pala más adecuada para el usuario, destacando la razón de tu elección (por ejemplo, si se ajusta mejor al nivel de juego, tipo de juego, etc.).
-
-    Organiza las recomendaciones en un formato claro y fácil de leer. Usa un estilo que resalte las características clave de cada pala.
+    Sé breve, claro, y proporciona solo la información relevante. No uses información inventada o suposiciones.
     """
 )
+

@@ -55,8 +55,8 @@ def generar_guardar_indice_faiss(archivoJSON, rutaIndice):
         print(f"Error al guardar el índice FAISS: {e}")
 
 # Ruta al dataset y ubicación para guardar el índice
-archivoJSON = "C:/Users/alvar/TFG/chatbot_aws/dataset_padel_nuestro/palas_padelnuestro.json"
-rutaIndice = "C:/Users/alvar/TFG/chatbot_aws/faiss/faiss_index"
+archivoJSON = "C:/Users/alvar/TFG/PADELMASTER BACKEND/dataset_padel_nuestro/palas_padelnuestro_actualizado/palas_padelnuestro_actualizado.json"
+rutaIndice = "C:/Users/alvar/TFG/PADELMASTER BACKEND/faiss/faiss_index"
 
 # Generar y guardar el índice FAISS
 generar_guardar_indice_faiss(archivoJSON, rutaIndice)
