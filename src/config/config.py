@@ -3,6 +3,7 @@ import boto3
 from dotenv import load_dotenv
 import os
 from pathlib import Path
+from botocore.config import Config
 
 dotenv_path = Path(__file__).resolve().parent.parent.parent / '.env'
 # Cargar las variables de entorno desde el archivo .env
@@ -17,11 +18,19 @@ LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME")
 EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME")
 
 client = boto3.client(
-    'bedrock-runtime',
+    service_name='bedrock-runtime',
     region_name=AWS_REGION,
     aws_access_key_id=AWS_ACCESS_KEY_ID,
     aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
 )
+
+# LLM_MODEL_NAME_HAIKU = os.getenv("LLM_MODEL_NAME_HAIKU")
+# client_haiku = boto3.client(
+#     service_name='bedrock-runtime',
+#     region_name=AWS_REGION,
+#     aws_access_key_id=AWS_ACCESS_KEY_ID,
+#     aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+# )
 
 logging.basicConfig(
     level=logging.INFO,

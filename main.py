@@ -1,56 +1,34 @@
-# backend.py (FastAPI)
 import json
-from typing import Dict, Optional, Union
+from typing import Optional
 from fastapi import FastAPI, HTTPException
 from langchain_aws import ChatBedrock
 from pydantic import BaseModel
 from src.config.config import *
-from src.prompt import prompt_template, prompt_template_recommendations
+from src.prompt import *
 #from src.index_faiss import load_faiss_index
-from langchain.embeddings import HuggingFaceEmbeddings
-
+from src.qa import *
 
 app = FastAPI()
-
-# rutaIndice = "C:/Users/alvar/TFG/chatbot_aws/faiss/faiss_index"
-# model_name = "sentence-transformers/all-MiniLm-L6-v2"
-# embedding_model = HuggingFaceEmbeddings(model_name=model_name)
-# vector_store = None
-
-# def cargar_indice():
-#     global vector_store
-#     if vector_store is None:
-#         vector_store = load_faiss_index.cargar_indice_faiss_y_consultar(rutaIndice)
-#     return vector_store
 
 class UserQuery(BaseModel):
     frase_usuario: str
 
 @app.post("/consulta")
 async def ask_chatbot(query: UserQuery):
-    llm = ChatBedrock(model_id=LLM_MODEL_NAME, client=client)
-
-    consulta = query.frase_usuario
-
+    #print("Consulta en endpoint:", query.frase_usuario)
     try:
-        # Formatear el prompt con la consulta del usuario
-        prompt = prompt_template.format(user_input=consulta)
-        
-        # Obtener la respuesta del modelo LLM
-        respuesta = llm.invoke(prompt)
-
-        # print("Respuesta del modelo:")
-        # print(respuesta)
-        
-        # Devolver la respuesta del modelo
-        return {"Respuesta": respuesta.content}
+        response = get_qa(query.frase_usuario)
+        if response.get("mensaje"):
+            return response
+        else:
+            raise HTTPException(status_code=404, detail="No se encontraron resultados")
     except Exception as e:
-        return {"Error": f"Hubo un problema al procesar la consulta: {e}"}
+        raise HTTPException(status_code=500, detail=f"Error al procesar la consulta: {e}")
     
 
 class FilterModel(BaseModel):
     marca: Optional[str] = None
-    jugador: Optional[str] = None
+    sexo: Optional[str] = None
     forma: Optional[str] = None
     balance: Optional[str] = None
     dureza: Optional[str] = None
@@ -62,40 +40,6 @@ class FilterModel(BaseModel):
     precio_min: Optional[int] = None
     precio_max: Optional[int] = None
 
-DATASET_PATH = "C:/Users/alvar/TFG/PADELMASTER BACKEND/dataset_padel_nuestro/palas_padelnuestro_actualizado/palas_padelnuestro_actualizado.json"
-
-def cargar_dataset():
-    with open(DATASET_PATH, "r", encoding="utf-8") as file:
-        return json.load(file)
-
-def convertir_precio(precio_str: str) -> float:
-    """Convierte una cadena de precio con formato europeo a float."""
-    precio_limpio = precio_str.replace("€", "").replace(",", ".").strip()  # Eliminar símbolos y espacios
-    return float(precio_limpio)
-
-def formatear_recomendaciones(recomendaciones):
-    """Devuelve las recomendaciones formateadas como una cadena de texto legible."""
-    if not recomendaciones:
-        return "No se encontraron palas de pádel que coincidan con tus criterios."
-    
-    mensaje = "Aquí tienes algunas recomendaciones de palas de pádel basadas en tus criterios:\n\n"
-    for pala in recomendaciones:
-        mensaje += f"• **Nombre**: {pala['Nombre']}\n"
-        mensaje += f"  **Imagen**: {pala['Imagen']}\n"
-        mensaje += f"  **Marca**: {pala['Marca']}\n"
-        mensaje += f"  **Precio**: {pala['Precio']}\n"
-        mensaje += f"  **Color**: {pala['Color']}\n"
-        mensaje += f"  **Balance**: {pala['Balance']}\n"
-        mensaje += f"  **Dureza**: {pala['Dureza']}\n"
-        mensaje += f"  **Acabado**: {pala['Acabado']}\n"
-        mensaje += f"  **Superfície**: {pala['Superfície']}\n"
-        mensaje += f"  **Tipo de juego**: {pala['Tipo de juego']}\n"
-        mensaje += f"  **Nivel de Juego**: {pala['Nivel de Juego']}\n"
-        mensaje += f"  **Colección Jugadores**: {pala['Colección Jugadores']}\n"
-        mensaje += f"  **Enlace**: {pala['Enlace']}\n"
-        mensaje += f"  **Descripción**: {pala['Descripción']}\n"
-    
-    return mensaje
 
 @app.post("/recommend")
 async def apply_filters(filter_data: FilterModel):
@@ -116,16 +60,16 @@ async def apply_filters(filter_data: FilterModel):
             continue
 
         # Filtrar Jugador
-        if filtros.get('jugador'):
-            jugador_seleccionado = filtros['jugador'].lower()
+        if filtros.get('sexo'):
+            jugador_seleccionado = filtros['sexo'].lower()
             
             # Si el jugador seleccionado es 'Hombre' o 'Mujer', también considerar las opciones 'Hombre, Mujer' y 'Mujer, Hombre'
-            if jugador_seleccionado == 'hombre' and 'hombre' not in pala['Jugador'].lower() and 'hombre, mujer' not in pala['Jugador'].lower():
+            if jugador_seleccionado == 'hombre' and 'hombre' not in pala['Sexo'].lower() and 'hombre, mujer' not in pala['Sexo'].lower():
                 continue
-            if jugador_seleccionado == 'mujer' and 'mujer' not in pala['Jugador'].lower() and 'hombre, mujer' not in pala['Jugador'].lower():
+            if jugador_seleccionado == 'mujer' and 'mujer' not in pala['Sexo'].lower() and 'hombre, mujer' not in pala['Sexo'].lower():
                 continue
             # Si el jugador seleccionado es 'Junior', solo se devuelven las palas que tengan 'Junior'
-            if jugador_seleccionado == 'junior' and 'junior' not in pala['Jugador'].lower():
+            if jugador_seleccionado == 'junior' and 'junior' not in pala['Sexo'].lower():
                 continue
 
 
@@ -278,17 +222,17 @@ async def apply_filters(filter_data: FilterModel):
         })
     
     # Limitar el número de recomendaciones a 5
-    recomendaciones = recomendaciones[:4]
+    recomendaciones = recomendaciones[:3]
 
     contexto = formatear_recomendaciones(recomendaciones)
     llm = ChatBedrock(model_id=LLM_MODEL_NAME, client=client)
-    print("CONTEXTO",contexto) #! Debug OK
+    #print("CONTEXTO",contexto) #! Debug OK
     
     try:
         prompt_recommendations = prompt_template_recommendations.format(user_input=contexto, filters=filtros)
-        print("PROMPT RECOMMENDATIONS",prompt_recommendations) #! Debug OK
+        #print("PROMPT RECOMMENDATIONS",prompt_recommendations) #! Debug OK
         respuesta = llm.invoke(prompt_recommendations)
-        print("Datos enviados al frontend:", respuesta.content + "\n" + "Recomendaciones:", recomendaciones) #! Debug OK
+        #print("Datos enviados al frontend:", respuesta.content + "\n" + "Recomendaciones:", recomendaciones) #! Debug OK
     
     except Exception as e:
         print("Error al generar recomendaciones:", e)

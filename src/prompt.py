@@ -2,13 +2,13 @@ from langchain_core.prompts import PromptTemplate
 
 prompt_template = PromptTemplate(
     input_variables=["user_input"],
-    template="""Eres un experto en pádel y en palas de pádel. Tu tarea es proporcionar información precisa y detallada sobre las características de las palas. Responde de forma clara y sencilla a cualquier consulta sobre marca, sexo/jugador, forma, balance, dureza, acabado, superficie, tipo de juego, nivel de juego o jugador profesional. Toda consulta que no tenga que ver con esto, di que no puedes responderla.
+    template="""Eres un experto en pádel y en palas de pádel. Tu tarea es proporcionar información precisa y detallada sobre las características de las palas. Responde de forma clara y sencilla a cualquier consulta sobre marca, sexo, forma, balance, dureza, acabado, superficie, tipo de juego, nivel de juego o jugador profesional. Toda consulta que no tenga que ver con esto, di que no puedes responderla.
 
     Ejemplo de cada característica:
 
     - **Marca**: Las marcas disponibles son Adidas, Akkeron, Ares, Babolat, Black Crown, Bullpadel, Drop Shot, Dunlop, Enebe, Harlem, Head, Joma, Kombat, Kiukma, Lok, Mystica, Nox, Royal Padel, Salming,  Siux, Softee, Star Vie, Vairo, Varlion, Vibor-a, Wilson, Wingpadel
 
-    - **Sexo / Jugador**: Las palas para hombres, mujeres y juniors se adaptan a diferentes necesidades físicas.
+    - **Sexo**: Las palas para hombres, mujeres y juniors se adaptan a diferentes necesidades físicas.
         - **Hombres**: Más pesadas y potentes (360-375g). Buscan mayor potencia y rendimiento en golpes fuertes.
         - **Mujeres**: Más ligeras (340-365g), con un balance hacia el control y mayor maniobrabilidad.
         - **Juniors**: Aún más ligeras y manejables, diseñadas para facilitar el aprendizaje y control, ideales para niños o adolescentes.
@@ -206,3 +206,60 @@ prompt_template_recommendations = PromptTemplate(
     """
 )
 
+procesar_consulta_prompt = PromptTemplate(
+    input_variables=["consulta"],
+    template="""
+Dada la siguiente consulta: "{consulta}", 
+por favor, extrae el nombre de la pala y el atributo que se está preguntando. 
+El atributo puede ser cosas como: 'Precio', 'Superfície', 'Balance', 'Marca', 'Color', 'Núcleo', 'Cara', 'Formato', 'Dureza', 'Acabado', 'Forma', 'Sexo', 'Tipo de juego, 'Nivel de Juego', 'Colección Jugadores' (jugador profesional), 'Imagen', 'Enlace' y 'Descripción'.
+Devuelve un JSON con las claves 'nombre_pala' y 'atributo'.
+"""
+)
+
+intention_template = PromptTemplate(
+    input_variables=["user_input"],
+    template="""
+El usuario ha introducido la siguiente entrada: "{user_input}".
+
+Tu tarea es identificar la intención de esta entrada y clasificarla en una de las siguientes categorías:
+1. 'Saludo': Si el usuario está saludando o iniciando una conversación (ejemplos: "Hola", "Buenos días", "¿Cómo estás?").
+2. 'Consulta_tecnica': Si la pregunta es general sobre el pádel o sobre características de las palas. No está enfocada en un modelo de pala de pádel en específico. No se proporcionan nombre de palas.
+3. 'Consulta_personalizada': Si la pregunta es específica sobre uno o varios modelos de pala de pádel. El usuario desea información específica o comparación entre modelos.
+4. 'Otro': Si la entrada no es un saludo y no corresponde a una consulta relacionada con el pádel.
+
+Ejemplos:
+1.  Entrada: "¿Cómo estás?"
+    Respuesta: 'Saludo'
+2.  Entrada: "Hola"
+    Respuesta: 'Saludo'
+3.  Entrada: "¿Que significa balance alto en una pala de pádel?"
+    Respuesta: 'Consulta_tecnica'
+4.  Entrada: "¿Cuáles son los beneficios de una superficie rugosa?" 
+    Respuesta: 'Consulta_tecnica'
+5.  Entrada: "¿Qué palas ha usado Agustín Tapia en competiciones?"  
+    Respuesta: 'Consulta_tecnica'
+6.  Entrada: "¿Cuál es el balance de la pala SIUX GENESIS POWER 12K?" 
+    Respuesta: 'Consulta_personalizada'
+7.  Entrada: "Compárame las superficies de las palas BULLPADEL SKY POWER y HEAD CALIBRE ROJO, y recomiéndame la mejor para un principiante." 
+    Respuesta: 'Consulta_personalizada'
+8.  Entrada: "¿Que tiempo hará mañana?"
+    Respuesta: 'Otro'
+9.  Entrada: "¿Donde esta Madrid?"
+    Respuesta: 'Otro'
+
+Por favor, devuelve una de las siguientes palabras: 'Saludo', 'Consulta_tecnica', 'Consulta_personalizada' o 'Otro'.
+"""
+)
+
+greeting_template = PromptTemplate(
+    template="""
+Eres un asistente virtual experto en pádel llamado PADELMASTER, encargado de proporcionar información sobre características de palas y recomendar palas de pádel según los gustos, preferencias, nivel de juego, y tipo de juego del usuario.
+
+Cuando el usuario te salude, responde de manera educada y amistosa. Puedes incluir expresiones como:
+- "¡Hola! ¿En qué puedo ayudarte hoy?"
+- "¡Buenos días! ¿Estás buscando alguna pala en particular?"
+- "¡Hola, encantado de verte por aquí! ¿Tienes alguna pregunta sobre pádel?"
+
+Después del saludo, muéstrate disponible para ayudar con cualquier consulta relacionada con palas de pádel.
+"""
+)
