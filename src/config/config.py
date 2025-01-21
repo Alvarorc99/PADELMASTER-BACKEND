@@ -14,23 +14,31 @@ AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_REGION = os.getenv("AWS_REGION")
 
-LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME")
+LLM_CLAUDE_3_HAIKU = os.getenv("LLM_CLAUDE_3_HAIKU")
 EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME")
+LLM_CLAUDE_INSTANT = os.getenv("LLM_CLAUDE_INSTANT")
+LLM_CLAUDE_SONNET = os.getenv("LLM_CLAUDE_SONNET")
 
-client = boto3.client(
+claude_3_haiku_client = boto3.client(
     service_name='bedrock-runtime',
     region_name=AWS_REGION,
     aws_access_key_id=AWS_ACCESS_KEY_ID,
     aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
 )
 
-# LLM_MODEL_NAME_HAIKU = os.getenv("LLM_MODEL_NAME_HAIKU")
-# client_haiku = boto3.client(
-#     service_name='bedrock-runtime',
-#     region_name=AWS_REGION,
-#     aws_access_key_id=AWS_ACCESS_KEY_ID,
-#     aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-# )
+claude_instant_client = boto3.client(
+    service_name='bedrock-runtime',
+    region_name=AWS_REGION,
+    aws_access_key_id=AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+)
+
+sonnet_client = boto3.client(
+    service_name='bedrock-runtime',
+    region_name=AWS_REGION,
+    aws_access_key_id=AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+)
 
 logging.basicConfig(
     level=logging.INFO,

@@ -5,19 +5,19 @@ from langchain_aws import ChatBedrock
 from pydantic import BaseModel
 from src.config.config import *
 from src.prompt import *
-#from src.index_faiss import load_faiss_index
 from src.qa import *
 
 app = FastAPI()
 
 class UserQuery(BaseModel):
     frase_usuario: str
+    conversacion: list
 
 @app.post("/consulta")
 async def ask_chatbot(query: UserQuery):
     #print("Consulta en endpoint:", query.frase_usuario)
     try:
-        response = get_qa(query.frase_usuario)
+        response = get_qa(query.frase_usuario, query.conversacion)
         if response.get("mensaje"):
             return response
         else:
@@ -222,16 +222,16 @@ async def apply_filters(filter_data: FilterModel):
         })
     
     # Limitar el número de recomendaciones a 5
-    recomendaciones = recomendaciones[:3]
+    recomendaciones = recomendaciones[:5]
 
     contexto = formatear_recomendaciones(recomendaciones)
-    llm = ChatBedrock(model_id=LLM_MODEL_NAME, client=client)
+    llm_instant = ChatBedrock(model_id=LLM_CLAUDE_INSTANT, client=claude_instant_client)
     #print("CONTEXTO",contexto) #! Debug OK
     
     try:
         prompt_recommendations = prompt_template_recommendations.format(user_input=contexto, filters=filtros)
         #print("PROMPT RECOMMENDATIONS",prompt_recommendations) #! Debug OK
-        respuesta = llm.invoke(prompt_recommendations)
+        respuesta = llm_instant.invoke(prompt_recommendations)
         #print("Datos enviados al frontend:", respuesta.content + "\n" + "Recomendaciones:", recomendaciones) #! Debug OK
     
     except Exception as e:

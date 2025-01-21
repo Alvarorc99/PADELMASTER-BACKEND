@@ -1,65 +1,118 @@
-import datetime
 import json
-import time
 from langchain_aws import ChatBedrock
 from src.prompt import *
-from src.schemas import IntentionOutput
-from src.index_faiss.load_faiss_index import procesar_consulta, consultar_faiss, reformular_respuesta
+from src.schemas import IntentionOutput, QuestionOutput
+from src.index_faiss.load_faiss_index import procesar_consulta, consultar_faiss, reformular_respuesta, reformular_respuesta_sin_resultados
 from src.config.config import *
 
 DATASET_PATH = "C:/Users/alvar/TFG/PADELMASTER BACKEND/dataset_padel_nuestro/palas_padelnuestro_actualizado/palas_padelnuestro_actualizado.json"
     
-def get_qa(user_input: str):
+def get_qa(user_input: str, conversation: list):
     #print("Consulta recibida:", user_input)
+   
     try:
-        llm = ChatBedrock(model_id=LLM_MODEL_NAME, client=client)
+        # Uso de modelos
+        llm_haiku = ChatBedrock(model_id=LLM_CLAUDE_3_HAIKU, client=claude_3_haiku_client)
+        llm_sonnet = ChatBedrock(model_id=LLM_CLAUDE_SONNET, client=sonnet_client)
+
+        runnable = conversation_template | llm_haiku.with_structured_output(schema=QuestionOutput)
+
+        respuesta = runnable.invoke({"user_input": user_input, "conversation": conversation})
+        pregunta_reformulada = respuesta.Pregunta
 
         # Enviar la consulta al modelo para identificar la intención
-        runnable = intention_template | llm.with_structured_output(schema=IntentionOutput)
+        runnable = intention_template | llm_haiku.with_structured_output(schema=IntentionOutput)
         #print(f"Prompt que se enviará al modelo: {intention_template.template.format(user_input=user_input)}")
         #print("RUNNABLE:", runnable)
-
-        respuesta = runnable.invoke({"user_input": user_input})
+        respuesta = runnable.invoke({"user_input": pregunta_reformulada})
         print("Resultado de la intención:", respuesta)
-
-        # Manejar las intenciones
-        if respuesta.Saludo:
+        
+        #? Manejar las intenciones
+        if respuesta.Saludo: # TODO OK
             print("Saludo recibido")
-            prompt_message = greeting_template.format()
-            message_response = llm.invoke(prompt_message)
+            prompt_message = greeting_template.format(user_input=user_input)
+            message_response = llm_sonnet.invoke(prompt_message)
             mensaje_usuario = message_response.content
             return {
-                "mensaje": mensaje_usuario
+                "tipo": "Saludo",
+                "mensaje": mensaje_usuario,
+                "imagen_url": None,
             }
-
-        elif respuesta.Consulta_tecnica:
+        
+        elif respuesta.Consulta_tecnica: # TODO OK
             print("Consulta técnica recibida")
-            prompt = prompt_template.format(user_input=user_input)
-            respuesta = llm.invoke(prompt)
+            prompt_message = prompt_template.format(user_input=pregunta_reformulada)
+            message_response = llm_sonnet.invoke(prompt_message)
+            mensaje_usuario = message_response.content
             return {
-                "mensaje": respuesta.content
+                "tipo": "Consulta_tecnica",
+                "mensaje": mensaje_usuario,
+                "imagen_url": None,
             }
-
+        
         elif respuesta.Consulta_personalizada:
-            print("Consulta personalizada recibida")
-            nombre_pala, atributo = procesar_consulta(user_input)
-            print("Nombre de la pala y atributo:", nombre_pala, atributo)
+            print("Consulta personalizada recibida:", user_input)
+            nombre_pala, atributo = procesar_consulta(consulta=user_input)
+            print(f"Nombre de la pala {nombre_pala} y atributo {atributo}:")
+
             if nombre_pala and atributo:
                 resultado_faiss = consultar_faiss("C:/Users/alvar/TFG/PADELMASTER BACKEND/faiss/faiss_index", nombre_pala, atributo)
-                respuesta_final = reformular_respuesta(resultado_faiss, nombre_pala, atributo)
-                return {
-                    "mensaje": respuesta_final
+
+                if resultado_faiss["similares"]:
+                    palas_con_imagenes = [
+                        f"{p['nombre']} (Imagen: {p['imagen']})" for p in resultado_faiss["similares"]
+                    ]
+                    respuesta_final = reformular_respuesta_sin_resultados(palas_con_imagenes, nombre_pala, atributo)
+                    print("No ha encontrado la pala y ha devuelto palas similares:", respuesta_final)
+                    return {
+                        "tipo": "Consulta_personalizada",
+                        "mensaje": respuesta_final,
+                        "imagen_url": imagen_url,
+                    }
+                elif resultado_faiss["exacto"]:
+                    valor_atributo = resultado_faiss["exacto"]["atributo"]
+                    imagen_url = resultado_faiss["exacto"]["imagen"]
+                    respuesta_final = reformular_respuesta(valor_atributo, nombre_pala, atributo)
+                    print("Ha encontrado la pala. Datos: ", respuesta_final)                    
+                    return {
+                        "tipo": "Consulta_personalizada",
+                        "mensaje": respuesta_final,
+                        "imagen_url": imagen_url,
+                    }
+                else:
+                    return {
+                        "tipo": "Consulta_personalizada",
+                        "mensaje": f"No se encontró ninguna información sobre la pala '{nombre_pala}'.",
+                        "imagen_url": None,
+                    }
+            else:
+                return{
+                    "tipo": "Consulta_personalizada",
+                    "mensaje": "No se pudieron procesar los datos de la consulta.",
+                    "imagen_url": None,
                 }
+                
+        elif respuesta.Recomendacion:
+            print("Recomendación recibida")
+            prompt_message = recomendation.format(mensaje=pregunta_reformulada)
+            message_response = llm_sonnet.invoke(prompt_message)
+            mensaje_usuario = message_response.content
+            return {
+                "tipo": "Recomendacion",
+                "mensaje": mensaje_usuario
+            }
 
         else:
             mensaje_usuario = "Lo siento, soy un asistente virtual encargado únicamente al mundo del pádel. No puedo ayudarte con esa consulta."
             return {
                 "mensaje": mensaje_usuario
             }
-
+    except ValueError as e:
+        logger.error(f"Error al desempaquetar valores: {e}")
+        return {"error": "Error al interpretar la consulta. Por favor, revisa tu entrada."}
     except Exception as e:
-        print(f"Error en get_qa: {e}")
-        return {"error": f"Error en el servidor: {e}"}
+        print(f"Error inesperado: {e}")
+        return {"error": f"Error interno: {str(e)}"}
 
 def cargar_dataset():
     with open(DATASET_PATH, "r", encoding="utf-8") as file:

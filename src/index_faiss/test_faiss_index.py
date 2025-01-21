@@ -16,7 +16,7 @@ from src.config.config import *
 
 def procesar_consulta(consulta):
     # Crear el modelo de lenguaje
-    llm = ChatBedrock(model_id=LLM_MODEL_NAME, client=client)
+    llm = ChatBedrock(model_id=LLM_CLAUDE_INSTANT, client=claude_instant_client)
 
     # Plantilla de prompt para extraer el nombre de la pala y el atributo
     prompt = """
@@ -69,7 +69,7 @@ def consultar_faiss(ruta_indice, nombre_pala, atributo):
 # Función para reformular la respuesta en lenguaje natural
 def reformular_respuesta(respuesta_faiss, nombre_pala, atributo):
     # Crear el modelo de lenguaje para reformular la respuesta
-    llm = ChatBedrock(model_id=LLM_MODEL_NAME, client=client)
+    llm = ChatBedrock(model_id=LLM_CLAUDE_INSTANT, client=claude_instant_client)
     
     prompt_reformulado = f"""
     El usuario preguntó por el atributo '{atributo}' de la pala '{nombre_pala}'. 
@@ -81,7 +81,7 @@ def reformular_respuesta(respuesta_faiss, nombre_pala, atributo):
     return response.content
 
 # Ejemplo de uso
-consulta = "Que acabado tiene la SIUX GENESIS POWER 12K"
+consulta = "Que precio tiene la pala BABOLAT TECHNICAL VIPER 2023?"
 nombre_pala, atributo = procesar_consulta(consulta)
 if nombre_pala and atributo:
     resultado_faiss = consultar_faiss("C:/Users/alvar/TFG/PADELMASTER BACKEND/faiss/faiss_index", nombre_pala, atributo)

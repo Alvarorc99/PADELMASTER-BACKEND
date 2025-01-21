@@ -13,59 +13,110 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../'
 from src.prompt import procesar_consulta_prompt
 from src.config.config import *
 
-def procesar_consulta(consulta):
-    # Crear el modelo de lenguaje
-    llm = ChatBedrock(model_id=LLM_MODEL_NAME, client=client)
+import json
+import logging
+import re
 
-    formatted_prompt = procesar_consulta_prompt.format(consulta=consulta)
-    
-    # Obtener la respuesta del modelo
-    response = llm.invoke(formatted_prompt)
-    
-    # Parsear la respuesta para obtener el nombre de la pala y el atributo
+import json
+import logging
+import re
+
+def procesar_consulta(consulta):
     try:
+        llm = ChatBedrock(model_id=LLM_CLAUDE_INSTANT, client=claude_instant_client)
+        formatted_prompt = procesar_consulta_prompt.format(consulta=consulta)
+
+        response = llm.invoke(formatted_prompt)
+        
+        if not response or not response.content:
+            raise ValueError("La respuesta del modelo está vacía o no se recibió contenido.")
+        
         resultado = response.content
+        resultado = resultado.replace("```json", "").replace("```", "").replace("`", "").strip()
+        print(f"Resultado bruto del modelo: '{resultado}'")
+    
         datos = json.loads(resultado)
         nombre_pala = datos.get("nombre_pala")
         atributo = datos.get("atributo")
+        print(f"Nombre pala: {nombre_pala}, Atributo: {atributo}")
+        
+        return nombre_pala, atributo
     except Exception as e:
-        logger.error(f"Error al procesar la respuesta del modelo: {e}")
-        return {"error": "No se pudo procesar la respuesta del modelo"}
-    
-    return nombre_pala, atributo
+        logging.error(f"Error inesperado al procesar la consulta: {str(e)}")
+        return None, None
 
 # Función para consultar el índice FAISS
 def consultar_faiss(ruta_indice, nombre_pala, atributo):
-    # Inicializar el modelo de embeddings
     embedding_model = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL_NAME)
 
-    # Cargar el índice FAISS
     vector_store = FAISS.load_local(ruta_indice, embedding_model, allow_dangerous_deserialization=True)
 
     # Realizar la búsqueda por similitud con el nombre de la pala
-    results = vector_store.similarity_search(nombre_pala, k=1)
+    results = vector_store.similarity_search(nombre_pala, k=10)
+    # print("Resultado de la consulta FAISS:", )
+    # for result in results:
+    #     print(result.metadata)
     
     if results:
-        pala = results[0].metadata  # La pala más relevante
-        valor_atributo = pala.get(atributo)  # Obtener el valor del atributo
+        palas_similares = [
+            {
+                "nombre": result.metadata.get('Nombre', 'Desconocido'),
+                "imagen_url": result.metadata.get('Imagen', 'Desconocido'),
+            }
+            for result in results
+        ]  
         
-        if valor_atributo:
-            return valor_atributo
-        else:
-            return f"No se encontró el atributo '{atributo}' para la pala {nombre_pala}."
-    else:
-        return f"No se encontró la pala {nombre_pala}."
+        # Asegúrate de usar el nombre correcto
+        print("Palas similares encontradas:", [p["nombre"] for p in palas_similares])
+
+        for result in results:
+            if result.metadata.get('Nombre', '').strip().lower() == nombre_pala.strip().lower():
+                valor_atributo = result.metadata.get(atributo)
+                imagen_url = result.metadata.get('Imagen', 'URL_DE_IMAGEN_POR_DEFECTO')
+                return {"exacto": {"atributo": valor_atributo, "imagen": imagen_url}, "similares": []}
+            
+        return {"exacto": None, "similares": palas_similares}
+            
+    return {"exacto": None, "similares": []}
 
 # Función para reformular la respuesta en lenguaje natural
 def reformular_respuesta(respuesta_faiss, nombre_pala, atributo):
     # Crear el modelo de lenguaje para reformular la respuesta
-    llm = ChatBedrock(model_id=LLM_MODEL_NAME, client=client)
+    llm_sonnet = ChatBedrock(model_id=LLM_CLAUDE_SONNET, client=sonnet_client)
     
     prompt_reformulado = f"""
-    El usuario preguntó por el atributo '{atributo}' de la pala '{nombre_pala}'. 
-    El valor encontrado fue: {respuesta_faiss}. 
-    Por favor, responde en lenguaje natural a esta consulta, de manera que el usuario lo entienda fácilmente.
+    El usuario preguntó por el atributo '{atributo}' de la pala '{nombre_pala}'.
+    El valor encontrado fue: {respuesta_faiss}.
+    Por favor, responde de manera breve y directa. 
+    Si se trata de un precio, usa solo el número correspondiente al precio y su moneda.
+    No menciones sitios web externos ni sugieras buscar en otras fuentes.
+    Devuelve una pequeña respuesta de forma educada y amistosa y el valor encontrado {respuesta_faiss}.
     """
 
-    response = llm.invoke(prompt_reformulado)
-    return response.content
+    response = llm_sonnet.invoke(prompt_reformulado)
+
+    if response and response.content:
+        return response.content.strip()
+
+    else:
+        logger.error( "Lo siento, no pude procesar tu consulta correctamente.")
+        return None, None
+    
+def reformular_respuesta_sin_resultados(palas_similares, nombre_pala, atributo):
+    # Crear el modelo de lenguaje para reformular la respuesta
+    llm_sonnet = ChatBedrock(model_id=LLM_CLAUDE_SONNET, client=sonnet_client)
+    
+    prompt_sin_respuesta = f"""
+    No se ha encontrado ninguna pala con el nombre exacto '{nombre_pala}' en nuestra base de datos.
+    Las palas más similares encontradas son: {', '.join(palas_similares)}.
+    Indícale al usuario que la pala por la que ha preguntado no existe, pero puede hacer preguntas sobre estas palas (en formato lista): {', '.join(palas_similares)}.
+    Por favor, responde de manera clara y amigable.
+    """
+
+    response = llm_sonnet.invoke(prompt_sin_respuesta)
+
+    if response and response.content:
+        return response.content.strip()
+    else:
+        logger.error( "Lo siento, no pude procesar tu consulta correctamente.")
+        return None, None

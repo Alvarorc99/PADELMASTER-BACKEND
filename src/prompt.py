@@ -2,7 +2,7 @@ from langchain_core.prompts import PromptTemplate
 
 prompt_template = PromptTemplate(
     input_variables=["user_input"],
-    template="""Eres un experto en pádel y en palas de pádel. Tu tarea es proporcionar información precisa y detallada sobre las características de las palas. Responde de forma clara y sencilla a cualquier consulta sobre marca, sexo, forma, balance, dureza, acabado, superficie, tipo de juego, nivel de juego o jugador profesional. Toda consulta que no tenga que ver con esto, di que no puedes responderla.
+    template="""Eres un experto en pádel y en palas de pádel. Tu tarea es proporcionar información precisa y detallada sobre las características de las palas. Responde de forma clara y sencilla a cualquier consulta sobre marca, sexo, forma, balance, dureza, acabado, superficie, tipo de juego, nivel de juego o colección de jugadores (jugador profesional).
 
     Ejemplo de cada característica:
 
@@ -177,6 +177,13 @@ prompt_template_recommendations = PromptTemplate(
 
     A continuación, muestra las palas recomendadas:
     {user_input}
+
+    Realiza primero una comparativa entre las palas seleccionadas, mostrando las diferencias clave entre ellas.
+    **Comparativa**:
+    - Realiza una comparativa destacando las diferencias clave (por ejemplo, precio, balance o tipo de juego).
+
+    **Recomendación final**:
+    - Basándote en la información, proporciona una recomendación final que ayude al usuario a tomar una decisión informada.
        
     Para cada pala, muestra sus caracteristicas con el siguiente formato:
     - En **formato subtítulo y subrayado**, el nombre de la pala usando el formato de subtítulo (`<h3>` o texto más pequeño).
@@ -195,12 +202,7 @@ prompt_template_recommendations = PromptTemplate(
         - Un enlace para obtener más detalles: [Más detalles aquí](Enlace)
 
     Presenta todas las palas recomendadas con la misma estructura y formato, una tras otra, sin numerarlas de forma continua (cada pala comienza desde el principio).  
-    Después de mostrar todas las palas:
-    **Comparativa**:
-    - Realiza una comparativa destacando las diferencias clave (por ejemplo, precio, balance o tipo de juego).
-
-    **Recomendación final**:
-    - Basándote en la información, proporciona una recomendación final que ayude al usuario a tomar una decisión informada.
+    
 
     Sé breve, claro, y proporciona solo la información relevante. No uses información inventada o suposiciones.
     """
@@ -212,7 +214,7 @@ procesar_consulta_prompt = PromptTemplate(
 Dada la siguiente consulta: "{consulta}", 
 por favor, extrae el nombre de la pala y el atributo que se está preguntando. 
 El atributo puede ser cosas como: 'Precio', 'Superfície', 'Balance', 'Marca', 'Color', 'Núcleo', 'Cara', 'Formato', 'Dureza', 'Acabado', 'Forma', 'Sexo', 'Tipo de juego, 'Nivel de Juego', 'Colección Jugadores' (jugador profesional), 'Imagen', 'Enlace' y 'Descripción'.
-Devuelve un JSON con las claves 'nombre_pala' y 'atributo'.
+Devuelve unicamente un JSON válido con las claves nombre_pala y atributo.
 """
 )
 
@@ -223,9 +225,10 @@ El usuario ha introducido la siguiente entrada: "{user_input}".
 
 Tu tarea es identificar la intención de esta entrada y clasificarla en una de las siguientes categorías:
 1. 'Saludo': Si el usuario está saludando o iniciando una conversación (ejemplos: "Hola", "Buenos días", "¿Cómo estás?").
-2. 'Consulta_tecnica': Si la pregunta es general sobre el pádel o sobre características de las palas. No está enfocada en un modelo de pala de pádel en específico. No se proporcionan nombre de palas.
-3. 'Consulta_personalizada': Si la pregunta es específica sobre uno o varios modelos de pala de pádel. El usuario desea información específica o comparación entre modelos.
-4. 'Otro': Si la entrada no es un saludo y no corresponde a una consulta relacionada con el pádel.
+2. 'Consulta_tecnica': Si la pregunta es sobre el significado o recomendación de una característica general de las palas o sobre el pádel en general, sin referencia a modelos específicos. Incluye preguntas sobre características en base a otras caracteristicas.
+3. 'Consulta_personalizada': Si la pregunta es específica sobre uno o varios modelos de pala de pádel. El usuario desea información específica sobre características o comparación entre modelos concretos.
+4. 'Recomendacion': Si el usuario solicita recomendaciones de palas sin especificar modelos concretos. Incluye frases como "quiero una pala recomendada", "recomiéndame una pala", o "que pala me recomiendas".
+5. 'Otro': Si la entrada no corresponde con ninguna de las categorías anteriores.
 
 Ejemplos:
 1.  Entrada: "¿Cómo estás?"
@@ -236,30 +239,74 @@ Ejemplos:
     Respuesta: 'Consulta_tecnica'
 4.  Entrada: "¿Cuáles son los beneficios de una superficie rugosa?" 
     Respuesta: 'Consulta_tecnica'
-5.  Entrada: "¿Qué palas ha usado Agustín Tapia en competiciones?"  
+5.  Entrada: "¿Cuál es el mejor balance para un jugador intermedio?"
     Respuesta: 'Consulta_tecnica'
-6.  Entrada: "¿Cuál es el balance de la pala SIUX GENESIS POWER 12K?" 
+6.  Entrada: "¿Qué tipo de pala debería usar si juego de defensa?"
+    Respuesta: 'Consulta_tecnica'
+7.  Entrada: "Soy nivel principiante, ¿qué tipo de dureza me recomiendas?"
+    Respuesta: 'Consulta_tecnica'
+8.  Entrada: "¿Qué balance recomendarías a un jugador nivel avanzado?"
+    Respuesta: 'Consulta_tecnica'
+9.  Entrada: "¿Cuál es el balance de la pala SIUX GENESIS POWER 12K?" 
     Respuesta: 'Consulta_personalizada'
-7.  Entrada: "Compárame las superficies de las palas BULLPADEL SKY POWER y HEAD CALIBRE ROJO, y recomiéndame la mejor para un principiante." 
+10. Entrada: "Compárame las superficies de las palas BULLPADEL SKY POWER y HEAD CALIBRE ROJO, y recomiéndame la mejor para un principiante." 
     Respuesta: 'Consulta_personalizada'
-8.  Entrada: "¿Que tiempo hará mañana?"
-    Respuesta: 'Otro'
-9.  Entrada: "¿Donde esta Madrid?"
+11. Entrada: "¿Que palas me recomiendas?"
+    Respuesta: 'Recomendacion'
+12. Entrada: "Quiero recibir recomendaciones sobre palas."
+    Respuesta: 'Recomendacion'
+13. Entrada: "¿Que tiempo hará mañana?"
     Respuesta: 'Otro'
 
-Por favor, devuelve una de las siguientes palabras: 'Saludo', 'Consulta_tecnica', 'Consulta_personalizada' o 'Otro'.
+Por favor, devuelve una de las siguientes palabras: 'Saludo', 'Consulta_tecnica', 'Consulta_personalizada', 'Recomendacion' o 'Otro'.
 """
 )
 
 greeting_template = PromptTemplate(
+    input_variables=["user_input"],
     template="""
-Eres un asistente virtual experto en pádel llamado PADELMASTER, encargado de proporcionar información sobre características de palas y recomendar palas de pádel según los gustos, preferencias, nivel de juego, y tipo de juego del usuario.
+Eres un asistente virtual experto en pádel llamado PADELMASTER, encargado de proporcionar información sobre características de palas y recomendar palas de pádel según los gustos, preferencias y características del usuario.
 
-Cuando el usuario te salude, responde de manera educada y amistosa. Puedes incluir expresiones como:
+Este es el mensaje que te ha enviado el usuario: {user_input}
+
+Responde de manera educada y amistosa. Puedes incluir expresiones como:
 - "¡Hola! ¿En qué puedo ayudarte hoy?"
 - "¡Buenos días! ¿Estás buscando alguna pala en particular?"
 - "¡Hola, encantado de verte por aquí! ¿Tienes alguna pregunta sobre pádel?"
 
 Después del saludo, muéstrate disponible para ayudar con cualquier consulta relacionada con palas de pádel.
+"""
+)
+
+recomendation = PromptTemplate(
+    input_variables=["mensaje"],
+    template="""
+El usuario quiere recibir recomendaciones sobre palas, aqui su mensaje: "{mensaje}".
+Comunícale de forma breve que para recibir la mejor recomendación de palas de pádel, debe responder al formulario.
+"""
+)
+
+conversation_template = PromptTemplate(
+    input_variables=["user_input", "conversation"],
+    template="""
+El usuario ha realizado la siguiente consulta: "{user_input}". ¿Se entiende esta consulta por si sola?
+En caso de que la consulta no se entienda por si sola y necesitas contexto, este es el historial de la conversación: {conversation}.
+Devuelve la pregunta reformulada usando el histórico de la conversación que te he proporcionado en el caso de que no se entienda la pregunta por si sola.
+
+Ejemplo de conversación 1:
+    Entrada: "Hola, como estas?"
+    Respuesta: "Hola, como estas?"
+    Entrada: "Que implica el balance de una pala en el estilo de juego de pádel?"
+    Respuesta: "Que implica el balance de una pala en el estilo de juego de pádel?"
+    Entrada: "¿Cuál es el balance de la pala SIUX GENESIS POWER 12K?"
+    Respuesta: "¿Cuál es el balance de la pala SIUX GENESIS POWER 12K?"
+
+Ejemplo de conversación 2:
+    Entrada: "Buenas tardes"
+    Respuesta: "Buenas tardes"
+    Entrada: "¿Cuanto cuesta la pala BABOLAT TECHNICAL VIPER 2023?"
+    Respuesta: "¿Cuanto cuesta la pala BABOLAT TECHNICAL VIPER 2023?"
+    Entrada: "¿Que palas utiliza Agustín Tapia?"
+    Respuesta: "¿Que palas utiliza Agustín Tapia?"
 """
 )
