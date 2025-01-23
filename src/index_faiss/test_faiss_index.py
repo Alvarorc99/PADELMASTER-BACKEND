@@ -16,13 +16,13 @@ from src.config.config import *
 
 def procesar_consulta(consulta):
     # Crear el modelo de lenguaje
-    llm = ChatBedrock(model_id=LLM_CLAUDE_INSTANT, client=claude_instant_client)
+    llm = ChatBedrock(model_id=LLM_CLAUDE_3_HAIKU, client=claude_3_haiku_client)
 
     # Plantilla de prompt para extraer el nombre de la pala y el atributo
     prompt = """
     Dada la siguiente consulta: "{consulta}", 
     por favor, extrae el nombre de la pala y el atributo que se está preguntando. 
-    El atributo puede ser cosas como: 'Precio', 'Superfície', 'Balance', 'Marca', 'Color', 'Núcleo', 'Cara', 'Formato', 'Dureza', 'Acabado', 'Forma', 'Jugador', 'Tipo de juego, 'Nivel de Juego', 'Colección Jugadores', 'Imagen', 'Enlace' y 'Descripción'.
+    El atributo puede ser cosas como: 'Precio', 'Superficie', 'Balance', 'Marca', 'Color', 'Núcleo', 'Cara', 'Formato', 'Dureza', 'Acabado', 'Forma', 'Jugador', 'Tipo de juego, 'Nivel de juego', 'Jugador profesional', 'Imagen', 'Enlace' y 'Descripción'.
     Devuelve un JSON con las claves 'nombre_pala' y 'atributo'.
     """
 
@@ -69,7 +69,7 @@ def consultar_faiss(ruta_indice, nombre_pala, atributo):
 # Función para reformular la respuesta en lenguaje natural
 def reformular_respuesta(respuesta_faiss, nombre_pala, atributo):
     # Crear el modelo de lenguaje para reformular la respuesta
-    llm = ChatBedrock(model_id=LLM_CLAUDE_INSTANT, client=claude_instant_client)
+    llm = ChatBedrock(model_id=LLM_CLAUDE_3_HAIKU, client=claude_3_haiku_client)
     
     prompt_reformulado = f"""
     El usuario preguntó por el atributo '{atributo}' de la pala '{nombre_pala}'. 

@@ -53,7 +53,7 @@ async def apply_filters(filter_data: FilterModel):
     for pala in dataset:
         precio_float = convertir_precio(pala["Precio"])  # Convertir el precio a float
         
-        # Filtros obligatorios (Jugador, Precio, Nivel de Juego)
+        # Filtros obligatorios (Jugador, Precio, Nivel de juego)
         if filtros['precio_min'] and precio_float < filtros['precio_min']:
             continue
         if filtros['precio_max'] and precio_float > filtros['precio_max']:
@@ -63,6 +63,8 @@ async def apply_filters(filter_data: FilterModel):
         if filtros.get('sexo'):
             jugador_seleccionado = filtros['sexo'].lower()
             
+            if 'Sin dato' in pala['Sexo'].lower():
+                continue
             # Si el jugador seleccionado es 'Hombre' o 'Mujer', también considerar las opciones 'Hombre, Mujer' y 'Mujer, Hombre'
             if jugador_seleccionado == 'hombre' and 'hombre' not in pala['Sexo'].lower() and 'hombre, mujer' not in pala['Sexo'].lower():
                 continue
@@ -78,6 +80,8 @@ async def apply_filters(filter_data: FilterModel):
             balance_selected = filtros['balance'].lower()
             pala_balance = pala.get('Balance', '').lower()
 
+            if 'Sin dato' in pala_balance:
+                continue
             if balance_selected == "bajo" and not (
                 "bajo" in pala_balance or "medio, bajo" in pala_balance):
                 continue
@@ -92,7 +96,9 @@ async def apply_filters(filter_data: FilterModel):
         if filtros.get('dureza'):
             dureza_selected = filtros['dureza'].lower()
             pala_dureza = pala.get('Dureza', '').lower()
-
+                    
+            if 'Sin dato' in pala_dureza:
+                continue
             if dureza_selected == "blanda" and not (
                 "blanda" in pala_dureza or "media, blanda" in pala_dureza):
                 continue
@@ -109,6 +115,8 @@ async def apply_filters(filter_data: FilterModel):
             acabado_selected = filtros['acabado'].lower()
             pala_acabado = pala.get('Acabado', '').lower()
 
+            if 'Sin dato' in pala_acabado:
+                continue
             if acabado_selected == "arenoso" and not any(
                 x in pala_acabado for x in ["arenoso", "brillo, arenoso", "mate, arenoso", "relieve 3d, arenoso"]):
                 continue
@@ -135,8 +143,10 @@ async def apply_filters(filter_data: FilterModel):
         # Filtro Superficie con combinaciones
         if filtros.get('superficie'):
             superficie_selected = filtros['superficie'].lower()
-            pala_superficie = pala.get('Superfície', '').lower()
+            pala_superficie = pala.get('Superficie', '').lower()
 
+            if 'Sin dato' in pala_superficie:
+                continue
             if superficie_selected == "arenosa" and not any(
                 x in pala_superficie for x in ["arenosa", "rugosa, arenosa"]):
                 continue
@@ -157,6 +167,8 @@ async def apply_filters(filter_data: FilterModel):
             tipo_juego_selected = filtros['tipo_juego'].lower()
             pala_tipo_juego = pala.get('Tipo de juego', '').lower()
 
+            if 'sin dato' in pala_tipo_juego:
+                continue
             if tipo_juego_selected == "control" and not any(
                 x in pala_tipo_juego for x in ["control", "control, potencia"]):
                 continue
@@ -170,11 +182,13 @@ async def apply_filters(filter_data: FilterModel):
                 continue
 
 
-        # Filtro Nivel de Juego
+        # Filtro Nivel de juego
         if filtros.get('nivel_juego'):
             nivel_juego_selected = filtros['nivel_juego'].lower()
-            pala_nivel_juego = pala.get('Nivel de Juego', '').lower()
+            pala_nivel_juego = pala.get('Nivel de juego', '').lower()
 
+            if 'Sin dato' in pala_nivel_juego:
+                continue
             if nivel_juego_selected == "principiante / intermedio" and not any(
                 x in pala_nivel_juego for x in ["principiante / intermedio", "avanzado / competición, principiante / intermedio"]):
                 continue
@@ -192,15 +206,33 @@ async def apply_filters(filter_data: FilterModel):
                 continue
 
         # Filtro Marca
-        if filtros.get('marca') and filtros['marca'] and filtros['marca'].lower() not in pala['Marca'].lower():
-            continue
+        if filtros.get('marca'): #! Antes estaba de otra forma asi que no se si estará bien
+            marca_selected = filtros['marca'].lower()
+            
+            # Si el valor de marca en la pala es 'Sin dato', se pasa al siguiente filtro
+            if 'Sin dato' in pala['Marca'].lower():
+                continue
+
+            # Comprobación de marca
+            if marca_selected and marca_selected not in pala['Marca'].lower():
+                continue
+
 
         # Filtro Forma
-        if filtros.get('forma') and filtros['forma'] and filtros['forma'].lower() != pala.get('Forma', '').lower():
-            continue
+        if filtros.get('forma'): #! Antes estaba de otra forma asi que no se si estará bien
+            forma_selected = filtros['forma'].lower()
+            
+            # Si el valor de forma en la pala es 'Sin dato', se pasa al siguiente filtro
+            if 'sin dato' in pala.get('Forma', '').lower():
+                continue
 
-        # Filtro Colección Jugadores
-        if filtros.get('coleccion_jugadores') and filtros['coleccion_jugadores'] and filtros['coleccion_jugadores'].lower() != pala.get('Colección Jugadores', '').lower():
+            # Comprobación de forma
+            if forma_selected and forma_selected != pala.get('Forma', '').lower():
+                continue
+
+
+        # Filtro Jugador profesional #! Cuidado con colección_jugadores que ahora se llama Jugador profesional
+        if filtros.get('coleccion_jugadores') and filtros['coleccion_jugadores'] and filtros['coleccion_jugadores'].lower() != pala.get('Jugador profesional', '').lower():
             continue
 
         # Añadir la pala si cumple todos los filtros aplicables
@@ -211,10 +243,10 @@ async def apply_filters(filter_data: FilterModel):
             "Balance": pala["Balance"],
             "Dureza": pala["Dureza"],
             "Acabado": pala["Acabado"],
-            "Superfície": pala["Superfície"],
+            "Superficie": pala["Superficie"],
             "Tipo de juego": pala["Tipo de juego"],
-            "Nivel de Juego": pala["Nivel de Juego"],
-            "Colección Jugadores": pala["Colección Jugadores"],
+            "Nivel de juego": pala["Nivel de juego"],
+            "Jugador profesional": pala["Jugador profesional"],
             "Precio": pala["Precio"],
             "Imagen": pala["Imagen"],
             "Enlace": pala["Enlace"],
@@ -225,13 +257,13 @@ async def apply_filters(filter_data: FilterModel):
     recomendaciones = recomendaciones[:5]
 
     contexto = formatear_recomendaciones(recomendaciones)
-    llm_instant = ChatBedrock(model_id=LLM_CLAUDE_INSTANT, client=claude_instant_client)
+    llm_haiku = ChatBedrock(model_id=LLM_CLAUDE_3_HAIKU, client=claude_3_haiku_client)
     #print("CONTEXTO",contexto) #! Debug OK
     
     try:
         prompt_recommendations = prompt_template_recommendations.format(user_input=contexto, filters=filtros)
         #print("PROMPT RECOMMENDATIONS",prompt_recommendations) #! Debug OK
-        respuesta = llm_instant.invoke(prompt_recommendations)
+        respuesta = llm_haiku.invoke(prompt_recommendations)
         #print("Datos enviados al frontend:", respuesta.content + "\n" + "Recomendaciones:", recomendaciones) #! Debug OK
     
     except Exception as e:

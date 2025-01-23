@@ -102,17 +102,17 @@ def obtener_caracteristicas_pala(enlace):
                     current_caras = value_text
                 elif 'Formato' in label_text:
                     current_formato = value_text
-                elif 'Nivel de Juego' in label_text:
+                elif 'Nivel de juego' in label_text:
                     current_nivel_juego = value_text
                 elif 'Acabado' in label_text:
                     current_acabado = value_text
                 elif 'Forma' in label_text:
                     current_forma = value_text
-                elif 'Superfície' in label_text:
+                elif 'Superficie' in label_text:
                     current_superficie = value_text
                 elif 'Tipo de Juego' in label_text:
                     current_tipo_juego = value_text
-                elif 'Colección Jugadores' in label_text:
+                elif 'Jugador profesional' in label_text:
                     current_coleccion_jugador = value_text
                 elif 'Jugador' in label_text:
                     current_jugador = value_text
@@ -180,11 +180,11 @@ df = pd.DataFrame({
     'Dureza': dureza,
     'Acabado': acabado,
     'Forma': forma,
-    'Superfície': superficie,
+    'Superficie': superficie,
     'Jugador': jugador,
     'Tipo de juego': tipo_juego,
-    'Nivel de Juego': nivel_juego,
-    'Colección Jugadores': coleccion_jugador,
+    'Nivel de juego': nivel_juego,
+    'Jugador profesional': coleccion_jugador,
     'Enlace': enlaces,
     'Imagen': imagen,
     'Descripción': descripcion,

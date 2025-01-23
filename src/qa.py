@@ -13,7 +13,6 @@ def get_qa(user_input: str, conversation: list):
     try:
         # Uso de modelos
         llm_haiku = ChatBedrock(model_id=LLM_CLAUDE_3_HAIKU, client=claude_3_haiku_client)
-        llm_sonnet = ChatBedrock(model_id=LLM_CLAUDE_SONNET, client=sonnet_client)
 
         runnable = conversation_template | llm_haiku.with_structured_output(schema=QuestionOutput)
 
@@ -31,7 +30,7 @@ def get_qa(user_input: str, conversation: list):
         if respuesta.Saludo: # TODO OK
             print("Saludo recibido")
             prompt_message = greeting_template.format(user_input=user_input)
-            message_response = llm_sonnet.invoke(prompt_message)
+            message_response = llm_haiku.invoke(prompt_message)
             mensaje_usuario = message_response.content
             return {
                 "tipo": "Saludo",
@@ -42,7 +41,7 @@ def get_qa(user_input: str, conversation: list):
         elif respuesta.Consulta_tecnica: # TODO OK
             print("Consulta técnica recibida")
             prompt_message = prompt_template.format(user_input=pregunta_reformulada)
-            message_response = llm_sonnet.invoke(prompt_message)
+            message_response = llm_haiku.invoke(prompt_message)
             mensaje_usuario = message_response.content
             return {
                 "tipo": "Consulta_tecnica",
@@ -59,15 +58,21 @@ def get_qa(user_input: str, conversation: list):
                 resultado_faiss = consultar_faiss("C:/Users/alvar/TFG/PADELMASTER BACKEND/faiss/faiss_index", nombre_pala, atributo)
 
                 if resultado_faiss["similares"]:
+                    imagen_url_similar = resultado_faiss["similares"][0].get("imagen_url", "URL_DE_IMAGEN_POR_DEFECTO")
+                    print("Imagen URL similar:", imagen_url_similar)
+                    
+                    # Crear lista de palas con imágenes en el formato adecuado
                     palas_con_imagenes = [
-                        f"{p['nombre']} (Imagen: {p['imagen']})" for p in resultado_faiss["similares"]
+                        f"{p['nombre']} (Imagen: {p['imagen_url']})" for p in resultado_faiss["similares"]
                     ]
+                    
                     respuesta_final = reformular_respuesta_sin_resultados(palas_con_imagenes, nombre_pala, atributo)
                     print("No ha encontrado la pala y ha devuelto palas similares:", respuesta_final)
+                    
                     return {
                         "tipo": "Consulta_personalizada",
                         "mensaje": respuesta_final,
-                        "imagen_url": imagen_url,
+                        "imagenes": resultado_faiss["similares"],  # Devuelve todas las palas con sus imágenes
                     }
                 elif resultado_faiss["exacto"]:
                     valor_atributo = resultado_faiss["exacto"]["atributo"]
@@ -91,11 +96,12 @@ def get_qa(user_input: str, conversation: list):
                     "mensaje": "No se pudieron procesar los datos de la consulta.",
                     "imagen_url": None,
                 }
+
                 
         elif respuesta.Recomendacion:
             print("Recomendación recibida")
             prompt_message = recomendation.format(mensaje=pregunta_reformulada)
-            message_response = llm_sonnet.invoke(prompt_message)
+            message_response = llm_haiku.invoke(prompt_message)
             mensaje_usuario = message_response.content
             return {
                 "tipo": "Recomendacion",
@@ -138,10 +144,10 @@ def formatear_recomendaciones(recomendaciones):
         mensaje += f"  **Balance**: {pala['Balance']}\n"
         mensaje += f"  **Dureza**: {pala['Dureza']}\n"
         mensaje += f"  **Acabado**: {pala['Acabado']}\n"
-        mensaje += f"  **Superfície**: {pala['Superfície']}\n"
+        mensaje += f"  **Superficie**: {pala['Superficie']}\n"
         mensaje += f"  **Tipo de juego**: {pala['Tipo de juego']}\n"
-        mensaje += f"  **Nivel de Juego**: {pala['Nivel de Juego']}\n"
-        mensaje += f"  **Colección Jugadores**: {pala['Colección Jugadores']}\n"
+        mensaje += f"  **Nivel de juego**: {pala['Nivel de juego']}\n"
+        mensaje += f"  **Jugador profesional**: {pala['Jugador profesional']}\n"
         mensaje += f"  **Enlace**: {pala['Enlace']}\n"
         mensaje += f"  **Descripción**: {pala['Descripción']}\n"
     

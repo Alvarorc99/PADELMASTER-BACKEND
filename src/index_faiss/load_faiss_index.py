@@ -23,7 +23,7 @@ import re
 
 def procesar_consulta(consulta):
     try:
-        llm = ChatBedrock(model_id=LLM_CLAUDE_INSTANT, client=claude_instant_client)
+        llm = ChatBedrock(model_id=LLM_CLAUDE_3_HAIKU, client=claude_3_haiku_client)
         formatted_prompt = procesar_consulta_prompt.format(consulta=consulta)
 
         response = llm.invoke(formatted_prompt)
@@ -36,7 +36,7 @@ def procesar_consulta(consulta):
         print(f"Resultado bruto del modelo: '{resultado}'")
     
         datos = json.loads(resultado)
-        nombre_pala = datos.get("nombre_pala")
+        nombre_pala = datos.get("nombre_pala").strip().lower()
         atributo = datos.get("atributo")
         print(f"Nombre pala: {nombre_pala}, Atributo: {atributo}")
         
@@ -61,7 +61,7 @@ def consultar_faiss(ruta_indice, nombre_pala, atributo):
         palas_similares = [
             {
                 "nombre": result.metadata.get('Nombre', 'Desconocido'),
-                "imagen_url": result.metadata.get('Imagen', 'Desconocido'),
+                "imagen_url": result.metadata.get('Imagen', 'URL_DE_IMAGEN_POR_DEFECTO'),
             }
             for result in results
         ]  
@@ -70,7 +70,7 @@ def consultar_faiss(ruta_indice, nombre_pala, atributo):
         print("Palas similares encontradas:", [p["nombre"] for p in palas_similares])
 
         for result in results:
-            if result.metadata.get('Nombre', '').strip().lower() == nombre_pala.strip().lower():
+            if result.metadata.get('Nombre', '').strip().lower() == nombre_pala:
                 valor_atributo = result.metadata.get(atributo)
                 imagen_url = result.metadata.get('Imagen', 'URL_DE_IMAGEN_POR_DEFECTO')
                 return {"exacto": {"atributo": valor_atributo, "imagen": imagen_url}, "similares": []}
@@ -82,18 +82,20 @@ def consultar_faiss(ruta_indice, nombre_pala, atributo):
 # Función para reformular la respuesta en lenguaje natural
 def reformular_respuesta(respuesta_faiss, nombre_pala, atributo):
     # Crear el modelo de lenguaje para reformular la respuesta
-    llm_sonnet = ChatBedrock(model_id=LLM_CLAUDE_SONNET, client=sonnet_client)
+    llm_haiku = ChatBedrock(model_id=LLM_CLAUDE_3_HAIKU, client=claude_3_haiku_client)
     
     prompt_reformulado = f"""
-    El usuario preguntó por el atributo '{atributo}' de la pala '{nombre_pala}'.
-    El valor encontrado fue: {respuesta_faiss}.
-    Por favor, responde de manera breve y directa. 
-    Si se trata de un precio, usa solo el número correspondiente al precio y su moneda.
-    No menciones sitios web externos ni sugieras buscar en otras fuentes.
-    Devuelve una pequeña respuesta de forma educada y amistosa y el valor encontrado {respuesta_faiss}.
+    El usuario ha preguntado sobre el atributo '{atributo}' de la pala '{nombre_pala}'.
+    El valor encontrado es: {respuesta_faiss}.
+    Por favor, responde de manera clara, amigable y educada a la consulta del usuario.
+
+    Si se trata de un precio, menciona el valor numérico y la moneda.
+    No incluyas enlaces externos ni sugieras otras fuentes.
+    
+    Por favor, reformula la respuesta de forma adecuada: 
     """
 
-    response = llm_sonnet.invoke(prompt_reformulado)
+    response = llm_haiku.invoke(prompt_reformulado)
 
     if response and response.content:
         return response.content.strip()
@@ -104,7 +106,7 @@ def reformular_respuesta(respuesta_faiss, nombre_pala, atributo):
     
 def reformular_respuesta_sin_resultados(palas_similares, nombre_pala, atributo):
     # Crear el modelo de lenguaje para reformular la respuesta
-    llm_sonnet = ChatBedrock(model_id=LLM_CLAUDE_SONNET, client=sonnet_client)
+    llm_haiku = ChatBedrock(model_id=LLM_CLAUDE_3_HAIKU, client=claude_3_haiku_client)
     
     prompt_sin_respuesta = f"""
     No se ha encontrado ninguna pala con el nombre exacto '{nombre_pala}' en nuestra base de datos.
@@ -113,7 +115,7 @@ def reformular_respuesta_sin_resultados(palas_similares, nombre_pala, atributo):
     Por favor, responde de manera clara y amigable.
     """
 
-    response = llm_sonnet.invoke(prompt_sin_respuesta)
+    response = llm_haiku.invoke(prompt_sin_respuesta)
 
     if response and response.content:
         return response.content.strip()

@@ -1,15 +1,15 @@
 import pandas as pd
 
 # Cargar el dataset
-file_path = "C:/Users/alvar/TFG/chatbot_aws/dataset_padel_nuestro/palas_padelnuestro.json"
+file_path = "C:/Users/alvar/TFG/PADELMASTER BACKEND/dataset_padel_nuestro/palas_padelnuestro_actualizado/palas_padelnuestro_actualizado.json"
 df = pd.read_json(file_path)
 
 # Características a analizar
 caracteristicas_a_contar = [
     "Balance", "Cara", "Dureza", "Acabado", 
-    "Forma", "Superfície", "Jugador", 
-    "Tipo de juego", "Nivel de Juego",
-    "Marca", "Color", "Colección Jugadores", 
+    "Forma", "Superficie", "Sexo", 
+    "Tipo de juego", "Nivel de juego",
+    "Marca", "Jugador profesional", 
     "Núcleo", "Formato", "Precio"
 ]
 

@@ -20,13 +20,14 @@ def generar_guardar_indice_faiss(archivoJSON, rutaIndice):
     for _, row in df.iterrows():
         content = (
             f"Nombre: {row['Nombre']}, Marca: {row['Marca']}, Sexo: {row['Sexo']}, "
-            f"Nivel de Juego: {row['Nivel de Juego']}, Tipo de juego: {row['Tipo de juego']}, "
+            f"Nivel de juego: {row['Nivel de juego']}, Tipo de juego: {row['Tipo de juego']}, "
             f"Forma: {row['Forma']}, Balance: {row['Balance']}, Dureza: {row['Dureza']}, "
-            f"Precio: {row['Precio']} €, Formato: {row['Formato']}, Superficie: {row['Superfície']}, "
+            f"Precio: {row['Precio']} €, Formato: {row['Formato']}, Superficie: {row['Superficie']}, "
             f"Enlace: {row['Enlace']}, Imagen: {row['Imagen']}, Descripción: {row['Descripción']}"
         )
 
         metadata = row.to_dict()
+        metadata["Nombre"] = metadata["Nombre"].strip().lower()
         doc = Document(page_content=content, metadata=metadata)
         documents.append(doc)
 
