@@ -274,7 +274,7 @@ procesar_consulta_prompt = PromptTemplate(
     input_variables=["consulta"],
     template="""
 Dada la siguiente consulta: "{consulta}", 
-Por favor, extrae el nombre de la pala y el atributo que se está preguntando. Pueden estar en minúsculas o en mayúsculas.	 
+Por favor, extrae el/los nombre(s) de la(s) pala(s) y el atributo que se está preguntando. Pueden estar en minúsculas o en mayúsculas.	 
 El atributo puede ser cosas como: 'Precio', 'Superficie', 'Balance', 'Marca', 'Color', 'Núcleo', 'Cara', 'Formato', 'Dureza', 'Acabado', 'Forma', 'Sexo', 'Tipo de juego, 'Nivel de juego', 'Jugador profesional', 'Imagen', 'Enlace' y 'Descripción'.
 Devuelve el atributo siempre y unicamente con la primera letra en mayúscula.
 El nombre de la pala debería incluir la marca, el modelo y puede ser que el año o algún otro detalle como número de serie o algo parecido.
@@ -347,6 +347,7 @@ recomendation = PromptTemplate(
     template="""
 El usuario quiere recibir recomendaciones sobre palas, aqui su mensaje: "{mensaje}".
 Comunícale de forma breve que para recibir la mejor recomendación de palas de pádel, debe responder al formulario.
+Que la respuesta sea amigable por favor.
 """
 )
 
