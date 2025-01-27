@@ -234,18 +234,11 @@ prompt_template_recommendations = PromptTemplate( #! Que no pinte el los datos d
     template="""
     Eres un experto en pádel y especializado en recomendar palas de pádel. Tu tarea es mostrarle al usuario las palas que coincidan con los filtros proporcionados. No inventes datos.
 
-    Comienza asegurando al usuario que en base a los filtros que ha proporcionado, le vas a mostrar las palas recomendadas. Estos son los filtros aplicados:
+    Comienza asegurando al usuario que en base a las caracteristicas que ha proporcionado, le vas a mostrar las palas recomendadas. Estos son los filtros aplicados (no se los muestres al usuario):
     {filters}
 
     A continuación, muestra las palas recomendadas:
     {user_input}
-
-    Realiza primero una comparativa entre las palas seleccionadas, mostrando las diferencias clave entre ellas.
-    **Comparativa**:
-    - Realiza una comparativa destacando las diferencias clave (por ejemplo, precio, balance o tipo de juego).
-
-    **Recomendación final**:
-    - Basándote en la información, proporciona una recomendación final que ayude al usuario a tomar una decisión informada.
        
     Para cada pala, muestra sus caracteristicas con el siguiente formato:
     - En **formato subtítulo y subrayado**, el nombre de la pala usando el formato de subtítulo (`<h3>` o texto más pequeño).
@@ -264,6 +257,13 @@ prompt_template_recommendations = PromptTemplate( #! Que no pinte el los datos d
         - Un enlace para obtener más detalles: [Más detalles aquí](Enlace)
 
     Presenta todas las palas recomendadas con la misma estructura y formato, una tras otra, sin numerarlas de forma continua (cada pala comienza desde el principio).  
+
+    Realiza por último, una comparativa entre las palas seleccionadas, mostrando las diferencias clave entre ellas.
+    **Comparativa**:
+    - Realiza una comparativa destacando las diferencias clave (por ejemplo, precio, balance o tipo de juego, etc.).
+
+    **Recomendación final**:
+    - Basándote en la información, proporciona una recomendación final que ayude al usuario a tomar una decisión informada.
     
 
     Sé breve, claro, y proporciona solo la información relevante. No uses información inventada o suposiciones.
@@ -292,7 +292,8 @@ Tu tarea es identificar la intención de esta entrada y clasificarla en una de l
 2. 'Consulta_tecnica': Si la pregunta es sobre el significado o recomendación de una característica general de las palas o sobre el pádel en general, sin referencia a modelos específicos. Incluye preguntas sobre características en base a otras caracteristicas.
 3. 'Consulta_personalizada': Si la pregunta es específica sobre uno o varios modelos de pala de pádel. El usuario desea información específica sobre características o comparación entre modelos concretos.
 4. 'Recomendacion': Si el usuario solicita recomendaciones de palas sin especificar modelos concretos. Incluye frases como "quiero una pala recomendada", "recomiéndame una pala", o "que pala me recomiendas".
-5. 'Otro': Si la entrada no corresponde con ninguna de las categorías anteriores.
+5. 'Recomendacion_personalizada': Si el usuario nos esta describiendo sus características y preferencias para encontrar una pala de pádel.
+6. 'Otro': Si la entrada no corresponde con ninguna de las categorías anteriores.
 
 Ejemplos:
 1.  Entrada: "¿Cómo estás?"
@@ -321,8 +322,12 @@ Ejemplos:
     Respuesta: 'Recomendacion'
 13. Entrada: "¿Que tiempo hará mañana?"
     Respuesta: 'Otro'
+14. Entrada: "Soy un jugador de nivel principiante, quiero una pala de pádel con un balance medio y que sea blanda. ¿Cuál es la mejor opción?"
+    Respuesta: 'Recomendacion_personalizada'
+15. Entrada: "Hola, soy un jugador de nivel avanzado que le gusta la potencia y el control. Busco una pala con balance alto y forma redonda. ¿Cuál me recomiendas?"
+    Respuesta: 'Recomendacion_personalizada'
 
-Por favor, devuelve una de las siguientes palabras: 'Saludo', 'Consulta_tecnica', 'Consulta_personalizada', 'Recomendacion' o 'Otro'.
+Por favor, devuelve una de las siguientes palabras: 'Saludo', 'Consulta_tecnica', 'Consulta_personalizada', 'Recomendacion' 'Recomendacion_personalizada' o 'Otro'.
 """
 )
 
@@ -345,9 +350,26 @@ Después del saludo, muéstrate disponible para ayudar con cualquier consulta re
 recomendation = PromptTemplate(
     input_variables=["mensaje"],
     template="""
-El usuario quiere recibir recomendaciones sobre palas, aqui su mensaje: "{mensaje}".
-Comunícale de forma breve que para recibir la mejor recomendación de palas de pádel, debe responder al formulario.
-Que la respuesta sea amigable por favor.
+El usuario quiere recibir recomendaciones sobre palas de pádel. Aquí su mensaje: "{mensaje}".
+Indicale que para poder recibir una mejor recomendación debe proporcionar la mayor cantidad de información posible. 
+También coméntale que existen las siguientes caracteristicas de palas de pádel y que si no conoce el significado de alguna puede preguntarte para que le resuelvas las dudas.
+Aquí te dejo una lista de las características y sus posibles valores:
+- Marca: 'Adidas', 'Akkeron', 'Ares', 'Babolat', 'Black Crown', 'Bullpadel', 'Drop Shot', 'Dunlop', 'Enebe', 'Harlem', 'Head', 'Joma', 'Kombat', 'Kiukma', 'Lok', 'Mystica', 'Nox', 'Royal Padel', 'Salming', 'Siux', 'Softee', 'Star Vie', 'Vairo', 'Varlion', 'Vibor-a', 'Wilson', 'Wingpadel'.
+- Precio (en euros)
+- Sexo: 'Hombre', 'Mujer' y 'Junior'.
+- Forma: 'Diamante', 'Híbrida', 'Lágrima', 'Redonda'.
+- Balance: 'Bajo', 'Medio', 'Alto'.
+- Dureza: 'Blanda', 'Media', 'Dura'.
+- Acabado: 'Arenoso', 'Brillo', 'Brillo-Relieve3D', 'Brillo-Mate', 'Brillo-Arenoso', 'Mate', 'Mate-Arenoso', 'Mate-Relieve3D', 'Relieve 3D', 'Relieve3D-Arenoso', 'Rugosa'.
+- Formato: 'Normal', 'Oversize'.
+- Superficie: 'Arenosa', 'Rugosa', 'Rugosa-Arenosa', 'Lisa'.
+- Núcleo: 'Soft Eva', 'Eva', 'Black Eva', 'Medium Eva', 'Multieva', 'Foam', 'Hard Eva', 'Ultrasoft Eva', 'Polietileno', 'Eva Hr3', 'Supersoft Eva', 'Eva Pro', 'Power Blast Eva', 'Mega Flex Core', 'Black Eva Hr3', 'Eva Soft Low Density', 'Eva Soft Performance', 'Eva Pro High Density', 'Eva High Memory', 'Eva, Polietileno', 'Eva Pro 50', 'Eva Pro, Multieva', 'Black Eva, Dual Density', 'Eva Soft 30', 'Sc White Eva', 'Dual Density', 'Black Eva Hr9', 'Eva 3xply', 'Comfort Foam', 'Eva Pro Touch', 'Black Eva, Soft Eva'.
+- Cara: 'Fibra De Vidrio', 'Carbono 3k', 'Carbono', 'Carbono 12k', 'Carbono 18k', 'Carbono 24k', 'Carbono, Fibra De Vidrio', 'Carbono 15k', 'Fibrix', 'Grafeno', 'Aluminio + Carbono', 'Carbono 6k', 'Glaphite', 'Carbono 16k', 'Tricarbon', 'Carbon Flex', 'Carbono 21k', 'Carbono + Grafeno', 'Carbono 3k, Basalto', 'Carbono 12k, Fibra De Vidrio', 'Fibra De Carbono', 'Carbono 1k', 'Fibra De Vidrio, Carbono 15k', 'Fiberflex', 'Carbono 12k, Fiberflex', 'Polietileno', 'Carbono, Fibrix', 'Policarbonato'.
+- Nivel de juego: 'Avanzado / Competición', 'Principiante / Intermedio', 'Profesional', 'Avanzado / Competición, Profesional', 'Avanzado / Competición, Principiante / Intermedio', 'Principiante / Intermedio, Profesional'.
+- Tipo de juego: 'Control, Potencia', 'Control', 'Potencia', 'Polivalente'.
+- Jugador profesional: 'Agustín Tapia', 'Miguel Lamperti', 'Alejandro Galán', 'Paquito Navarro', 'Juan Lebrón', 'Gemma Triay', 'Lucas Campagnolo', 'Franco Stupa', 'Marta Ortega', 'Sanyo Gutiérrez', 'Alejandra Salazar', 'Defi Brea Senesi', 'Fernando Belasteguín', 'Marta Marrero Marrero', 'Mª Pilar Sánchez Alayeto', 'Beatriz González', 'Juan Tello', 'Martin Di Nenno', 'Federico Chingotto', 'Ari Sánchez', 'Pablo Lima', 'Arturo Coello', 'Alejandro Ruiz Granados', 'Agustín Tapia', 'Miguel Lamperti', 'Paula Josmaria Martín', 'Patty Llaguno', 'Patty Llaguno', 'Miguel Yanguas Díez', 'Mª Jose Sánchez Alayeto', 'Seba Nerone', 'Aranzazu Osoro Ulrich'.
+
+Que la respuesta sea amigable y cercana. 
 """
 )
 
@@ -373,5 +395,33 @@ Ejemplo de conversación 2:
     Respuesta: "¿Cuanto cuesta la pala BABOLAT TECHNICAL VIPER 2023?"
     Entrada: "¿Que palas utiliza Agustín Tapia?"
     Respuesta: "¿Que palas utiliza Agustín Tapia?"
+"""
+)
+
+recomendacion_personalizada_template = PromptTemplate(
+    input_variables=["user_input"],
+    template="""
+El usuario ha proporcionado información sobre sus características y preferencias para encontrar una pala de pádel. Este es su mensaje: "{user_input}".
+
+Necesito que analices el mensaje y extraigas todas las características que se refieren a la pala de pádel. Estas son las características que debes identificar y sus posibles valores:
+- Marca: 'Adidas', 'Akkeron', 'Ares', 'Babolat', 'Black Crown', 'Bullpadel', 'Drop Shot', 'Dunlop', 'Enebe', 'Harlem', 'Head', 'Joma', 'Kombat', 'Kiukma', 'Lok', 'Mystica', 'Nox', 'Royal Padel', 'Salming', 'Siux', 'Softee', 'Star Vie', 'Vairo', 'Varlion', 'Vibor-a', 'Wilson', 'Wingpadel'.
+- Sexo: 'Hombre', 'Mujer' y 'Junior'.
+- Forma: 'Diamante', 'Híbrida', 'Lágrima', 'Redonda'.
+- Balance: 'Bajo', 'Medio', 'Alto'.
+- Dureza: 'Blanda', 'Media', 'Dura'.
+- Acabado: 'Arenoso', 'Brillo', 'Brillo-Relieve3D', 'Brillo-Mate', 'Brillo-Arenoso', 'Mate', 'Mate-Arenoso', 'Mate-Relieve3D', 'Relieve 3D', 'Relieve3D-Arenoso', 'Rugosa'.
+- Formato: 'Normal', 'Oversize'.
+- Superficie: 'Arenosa', 'Rugosa', 'Rugosa-Arenosa', 'Lisa'.
+- Núcleo: 'Soft Eva', 'Eva', 'Black Eva', 'Medium Eva', 'Multieva', 'Foam', 'Hard Eva', 'Ultrasoft Eva', 'Polietileno', 'Eva Hr3', 'Supersoft Eva', 'Eva Pro', 'Power Blast Eva', 'Mega Flex Core', 'Black Eva Hr3', 'Eva Soft Low Density', 'Eva Soft Performance', 'Eva Pro High Density', 'Eva High Memory', 'Eva, Polietileno', 'Eva Pro 50', 'Eva Pro, Multieva', 'Black Eva, Dual Density', 'Eva Soft 30', 'Sc White Eva', 'Dual Density', 'Black Eva Hr9', 'Eva 3xply', 'Comfort Foam', 'Eva Pro Touch', 'Black Eva, Soft Eva'.
+- Cara: 'Fibra De Vidrio', 'Carbono 3k', 'Carbono', 'Carbono 12k', 'Carbono 18k', 'Carbono 24k', 'Carbono, Fibra De Vidrio', 'Carbono 15k', 'Fibrix', 'Grafeno', 'Aluminio + Carbono', 'Carbono 6k', 'Glaphite', 'Carbono 16k', 'Tricarbon', 'Carbon Flex', 'Carbono 21k', 'Carbono + Grafeno', 'Carbono 3k, Basalto', 'Carbono 12k, Fibra De Vidrio', 'Fibra De Carbono', 'Carbono 1k', 'Fibra De Vidrio, Carbono 15k', 'Fiberflex', 'Carbono 12k, Fiberflex', 'Polietileno', 'Carbono, Fibrix', 'Policarbonato'.
+- Nivel_de_juego: 'Avanzado / Competición', 'Principiante / Intermedio', 'Profesional', 'Avanzado / Competición, Profesional', 'Avanzado / Competición, Principiante / Intermedio', 'Principiante / Intermedio, Profesional'.
+- Tipo_de_juego: 'Control, Potencia', 'Control', 'Potencia', 'Polivalente'.
+- Jugador_profesional: 'Agustín Tapia', 'Miguel Lamperti', 'Alejandro Galán', 'Paquito Navarro', 'Juan Lebrón', 'Gemma Triay', 'Lucas Campagnolo', 'Franco Stupa', 'Marta Ortega', 'Sanyo Gutiérrez', 'Alejandra Salazar', 'Defi Brea Senesi', 'Fernando Belasteguín', 'Marta Marrero Marrero', 'Mª Pilar Sánchez Alayeto', 'Beatriz González', 'Juan Tello', 'Martin Di Nenno', 'Federico Chingotto', 'Ari Sánchez', 'Pablo Lima', 'Arturo Coello', 'Alejandro Ruiz Granados', 'Agustín Tapia', 'Miguel Lamperti', 'Paula Josmaria Martín', 'Patty Llaguno', 'Patty Llaguno', 'Miguel Yanguas Díez', 'Mª Jose Sánchez Alayeto', 'Seba Nerone', 'Aranzazu Osoro Ulrich'.
+- Precio_min: El precio más bajo que ha indicado el usuario. En caso de no mencionarlo, asignar '0.0'.
+- Precio_max: El precio más alto que ha indicado el usuario. En caso de no mencionarlo, asignar '500.0'. Si solo se menciona un valor, asignarlo a 'precio_max'.
+El rango de precios debe ser separado en dos variables: 'precio_min' (el precio más bajo) y 'precio_max' (el precio más alto).
+
+
+Por favor, devuelve exclusivamente un **JSON** con todas las caracteristicas mencionadas con la primera letra en mayúscula, nada mas. Si alguna característica no tiene un valor en el mensaje del usuario o no coincide con ninguno de los valores proporcionados, asigna "null" a esa característica. Los nombres de las caracteristicas y sus valores deben ser exactamente iguales a los especificados.
 """
 )
