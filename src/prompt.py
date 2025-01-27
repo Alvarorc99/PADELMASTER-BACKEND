@@ -234,39 +234,21 @@ prompt_template_recommendations = PromptTemplate( #! Que no pinte el los datos d
     template="""
     Eres un experto en pádel y especializado en recomendar palas de pádel. Tu tarea es mostrarle al usuario las palas que coincidan con los filtros proporcionados. No inventes datos.
 
-    Comienza asegurando al usuario que en base a las caracteristicas que ha proporcionado, le vas a mostrar las palas recomendadas. Estos son los filtros aplicados (no se los muestres al usuario):
+    Estos son los filtros aplicados por el usuario:
     {filters}
 
-    A continuación, muestra las palas recomendadas:
+    Aquí tienes un resumen de las palas recomendadas:
     {user_input}
-       
-    Para cada pala, muestra sus caracteristicas con el siguiente formato:
-    - En **formato subtítulo y subrayado**, el nombre de la pala usando el formato de subtítulo (`<h3>` o texto más pequeño).
-    - Justo debajo, la imagen de la pala (en tamaño reducido, por ejemplo 'width: 400px'): 
-    ![Imagen](Imagen)
-    - A continuación, una lista detallada de sus características:
-        - **Precio**: (Precio)
-        - **Balance**: (Balance)
-        - **Dureza**: (Dureza)
-        - **Acabado**: (Acabado)
-        - **Superficie**: (Superficie)
-        - **Tipo de juego**: (Tipo de juego)
-        - **Nivel de juego**: (Nivel de juego)
-        - **Jugador profesional**: (Jugador profesional). Si un jugador profesional ha utilizado esta pala, menciónalo claramente.
-        - **Descripción**: Un resumen completo de la **descripción** basado en el atributo 'Descripción' del JSON.
-        - Un enlace para obtener más detalles: [Más detalles aquí](Enlace)
 
-    Presenta todas las palas recomendadas con la misma estructura y formato, una tras otra, sin numerarlas de forma continua (cada pala comienza desde el principio).  
-
-    Realiza por último, una comparativa entre las palas seleccionadas, mostrando las diferencias clave entre ellas.
+    Realiza una comparativa entre las palas seleccionadas, destacando las diferencias clave entre ellas, como el balance, el precio, el tipo de juego, etc. Ayuda al usuario a decidir cuál es la mejor opción para él basándote en estas características. 
     **Comparativa**:
-    - Realiza una comparativa destacando las diferencias clave (por ejemplo, precio, balance o tipo de juego, etc.).
+    - Realiza una comparativa destacando las diferencias clave (por ejemplo, precio, balance o tipo de juego, nivel de juego, etc.).
 
     **Recomendación final**:
-    - Basándote en la información, proporciona una recomendación final que ayude al usuario a tomar una decisión informada.
+    - Basándote en la información proporcionada, proporciona una recomendación final que ayude al usuario a tomar una decisión sobre que pala comprar.
     
 
-    Sé breve, claro, y proporciona solo la información relevante. No uses información inventada o suposiciones.
+    Sé breve, claro, y proporciona solo la información relevante de manera agradable y amistosa. No uses información inventada o suposiciones.
     """
 )
 

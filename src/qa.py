@@ -150,13 +150,14 @@ def get_qa(user_input: str, conversation: list):
             #print(f"Filtros creados: {filtros.__dict__}") #! Esto sale todo a None
             #print("Claves esperadas por FilterModel:", FilterModel.__annotations__.keys()) #! Esto sale todo a None
 
-            recomendaciones = apply_filters(filtros)
+            message, recomendaciones = apply_filters(filtros) # Devolverá una lista de palas recomendadas y un mensaje de respuesta con la comparativa y recomendacion final
 
             print("Recomendaciones:", recomendaciones)
 
             return {
                 "tipo": "Recomendacion_personalizada",
-                "mensaje": recomendaciones,
+                "mensaje": message,
+                "recomendaciones": recomendaciones,
                 "imagen_url": None,
             }
 
@@ -195,10 +196,7 @@ def formatear_recomendaciones(recomendaciones):
     mensaje = "Aquí tienes algunas recomendaciones de palas de pádel basadas en tus criterios:\n\n"
     for pala in recomendaciones:
         mensaje += f"• **Nombre**: {pala['Nombre']}\n"
-        mensaje += f"  **Imagen**: {pala['Imagen']}\n"
-        mensaje += f"  **Marca**: {pala['Marca']}\n"
         mensaje += f"  **Precio**: {pala['Precio']}\n"
-        mensaje += f"  **Color**: {pala['Color']}\n"
         mensaje += f"  **Balance**: {pala['Balance']}\n"
         mensaje += f"  **Dureza**: {pala['Dureza']}\n"
         mensaje += f"  **Acabado**: {pala['Acabado']}\n"
@@ -206,7 +204,6 @@ def formatear_recomendaciones(recomendaciones):
         mensaje += f"  **Tipo de juego**: {pala['Tipo de juego']}\n"
         mensaje += f"  **Nivel de juego**: {pala['Nivel de juego']}\n"
         mensaje += f"  **Jugador profesional**: {pala['Jugador profesional']}\n"
-        mensaje += f"  **Enlace**: {pala['Enlace']}\n"
         mensaje += f"  **Descripción**: {pala['Descripción']}\n"
     
     return mensaje
@@ -474,7 +471,7 @@ def apply_filters(filtros: FilterModel):
         print("Error al generar recomendaciones:", e)
         respuesta = None
     
-    return respuesta.content
+    return respuesta.content, recomendaciones
     # return {
     #     "modelo_respuesta": respuesta.content if respuesta and respuesta.content else "No se puedo obtener una respuesta."
     # }
