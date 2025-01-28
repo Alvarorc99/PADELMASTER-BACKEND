@@ -1,137 +1,124 @@
+"""File to define the functions for the QA process"""
+
 from dataclasses import dataclass
 import json
 from typing import Optional
-from fastapi import requests
 from langchain_aws import ChatBedrock
-from src.prompt import *
-from src.schemas import IntentionOutput, QuestionOutput
-from src.index_faiss.load_faiss_index import procesar_consulta, consultar_faiss, reformular_respuesta, reformular_respuesta_sin_resultados
+import src.prompt as pro
+import src.schemas as sch
+from src.index_faiss.load_faiss_index import process_query, consult_faiss, reformular_respuesta, reformular_respuesta_sin_resultados
 from src.config.config import *
-
-DATASET_PATH = "C:/Users/alvar/TFG/PADELMASTER BACKEND/dataset_padel_nuestro/palas_padelnuestro_actualizado/palas_padelnuestro_actualizado.json"
     
 def get_qa(user_input: str, conversation: list):
-    #print("Consulta recibida:", user_input)
-   
+    """
+    Función que recibe una consulta del usuario y devuelve una respuesta en formato JSON.
+    
+    Args:
+        user_input (str): La consulta del usuario.
+        conversation (list): La conversación entre el usuario y el chatbot.
+
+    Returns:
+        Respuesta en formato JSON.
+    """   
     try:
-        # Uso de modelos
+        logger.info("User input received: %s", user_input)
+
+        conversation_window = conversation[-3:]
+        cleaned_conversation = [{'usuario': item['user_input'], 'respuesta': item['answer'], 'tipo': item['type']} for item in conversation_window]
+        logger.debug("Conversation cleaned context: %s", cleaned_conversation)
+
         llm_haiku = ChatBedrock(model_id=LLM_CLAUDE_3_HAIKU, client=claude_3_haiku_client)
 
-        runnable = conversation_template | llm_haiku.with_structured_output(schema=QuestionOutput)
+        runnable = pro.conversation_template | llm_haiku.with_structured_output(schema=sch.QuestionOutput)
+        answer = runnable.invoke({"user_input": user_input, "conversation": cleaned_conversation})
+        reformulated_question = answer.Question
+        logger.info("Reformulated question: %s", reformulated_question)
 
-        respuesta = runnable.invoke({"user_input": user_input, "conversation": conversation})
-        pregunta_reformulada = respuesta.Pregunta
+        runnable = pro.intention_template | llm_haiku.with_structured_output(schema=sch.IntentionOutput)
+        intention = runnable.invoke({"user_input": reformulated_question})
+        logger.info("User intention determined: %s", intention)
 
-        # Enviar la consulta al modelo para identificar la intención
-        runnable = intention_template | llm_haiku.with_structured_output(schema=IntentionOutput)
-        #print(f"Prompt que se enviará al modelo: {intention_template.template.format(user_input=user_input)}")
-        #print("RUNNABLE:", runnable)
-        respuesta = runnable.invoke({"user_input": pregunta_reformulada})
-        print("Resultado de la intención:", respuesta)
-        
-        #? Manejar las intenciones
-        if respuesta.Saludo: # TODO OK
-            print("Saludo recibido")
-            prompt_message = greeting_template.format(user_input=user_input)
-            message_response = llm_haiku.invoke(prompt_message)
-            mensaje_usuario = message_response.content
+        if intention.Greeting:
+            prompt_message = pro.greeting_template.format(user_input=user_input)
+            answer = llm_haiku.invoke(prompt_message)
+            chatbot_response = answer.content
+            logger.info("Chatbot response (greeting): %s", chatbot_response)
             return {
-                "tipo": "Saludo",
-                "mensaje": mensaje_usuario,
-                "imagen_url": None,
+                "type": "Greeting",
+                "answer": chatbot_response,
             }
         
-        elif respuesta.Consulta_tecnica: # TODO OK
-            print("Consulta técnica recibida")
-            prompt_message = prompt_template.format(user_input=pregunta_reformulada)
-            message_response = llm_haiku.invoke(prompt_message)
-            mensaje_usuario = message_response.content
+        elif intention.Technical_query:
+            prompt_message = pro.prompt_template.format(user_input=user_input, conversation=cleaned_conversation)
+            answer = llm_haiku.invoke(prompt_message)
+            chatbot_response = answer.content
+            logger.info("Chatbot response (technical query): %s", chatbot_response)
             return {
-                "tipo": "Consulta_tecnica",
-                "mensaje": mensaje_usuario,
-                "imagen_url": None,
+                "type": "Technical_query",
+                "answer": chatbot_response,
             }
         
-        elif respuesta.Consulta_personalizada:
-            print("Consulta personalizada recibida:", user_input)
-            nombre_pala, atributo = procesar_consulta(consulta=user_input)
-            print(f"Nombre de la pala {nombre_pala} y atributo {atributo}:")
+        elif intention.Personalized_query:
+            nombre_pala, atributo = process_query(query=reformulated_question)
 
             if nombre_pala and atributo:
-                resultado_faiss = consultar_faiss("C:/Users/alvar/TFG/PADELMASTER BACKEND/faiss/faiss_index", nombre_pala, atributo)
+                resultado_faiss = consult_faiss("C:/Users/alvar/TFG/PADELMASTER BACKEND/faiss/faiss_index", nombre_pala, atributo)
 
                 if resultado_faiss["similares"]:
-                    imagen_url_similar = resultado_faiss["similares"][0].get("imagen_url", "URL_DE_IMAGEN_POR_DEFECTO")
-                    print("Imagen URL similar:", imagen_url_similar)
-                    
-                    # Crear lista de palas con imágenes en el formato adecuado
-                    palas_con_imagenes = [
-                        f"{p['nombre']} (Imagen: {p['imagen_url']})" for p in resultado_faiss["similares"]
-                    ]
-                    
-                    respuesta_final = reformular_respuesta_sin_resultados(palas_con_imagenes, nombre_pala, atributo)
-                    print("No ha encontrado la pala y ha devuelto palas similares:", respuesta_final)
+                    chatbot_response = reformular_respuesta_sin_resultados(nombre_pala)
                     
                     return {
-                        "tipo": "Consulta_personalizada",
-                        "mensaje": respuesta_final,
-                        "imagenes": resultado_faiss["similares"],  # Devuelve todas las palas con sus imágenes
+                        "type": "Personalized_query",
+                        "answer": chatbot_response,
+                        "img": resultado_faiss["similares"],
+                        "similares": True,
                     }
                 elif resultado_faiss["exacto"]:
                     valor_atributo = resultado_faiss["exacto"]["atributo"]
                     imagen_url = resultado_faiss["exacto"]["imagen"]
-                    respuesta_final = reformular_respuesta(valor_atributo, nombre_pala, atributo)
-                    print("Ha encontrado la pala. Datos: ", respuesta_final)                    
+                    chatbot_response = reformular_respuesta(valor_atributo, nombre_pala, atributo)
                     return {
-                        "tipo": "Consulta_personalizada",
-                        "mensaje": respuesta_final,
-                        "imagen_url": imagen_url,
+                        "type": "Personalized_query",
+                        "answer": chatbot_response,
+                        "img": imagen_url,
                     }
                 else:
                     return {
-                        "tipo": "Consulta_personalizada",
-                        "mensaje": f"No se encontró ninguna información sobre la pala '{nombre_pala}'.",
-                        "imagen_url": None,
+                        "type": "Personalized_query",
+                        "answer": f"No se encontró ninguna información sobre la pala '{nombre_pala}'.",
                     }
             else:
                 return{
-                    "tipo": "Consulta_personalizada",
-                    "mensaje": "No se pudieron procesar los datos de la consulta.",
-                    "imagen_url": None,
+                    "type": "Personalized_query",
+                    "answer": "No se pudieron procesar los datos de la consulta.",
                 }
 
                 
-        elif respuesta.Recomendacion:
-            print("Recomendación recibida")
-            prompt_message = recomendation.format(mensaje=pregunta_reformulada)
-            message_response = llm_haiku.invoke(prompt_message)
-            mensaje_usuario = message_response.content
+        elif intention.Recommendation:
+            prompt_message = pro.recomendation.format(message=reformulated_question)
+            answer = llm_haiku.invoke(prompt_message)
+            chatbot_response = answer.content
+            logger.info("Chatbot response (recommendation): %s", chatbot_response)
             return {
-                "tipo": "Recomendacion",
-                "mensaje": mensaje_usuario
+                "type": "Recommendation",
+                "answer": chatbot_response
             }
         
-        elif respuesta.Recomendacion_personalizada:
-            print("Recomendación personalizada recibida")
-            prompt_recomendacion_personalizada = recomendacion_personalizada_template.format(user_input=pregunta_reformulada)
-            message_response = llm_haiku.invoke(prompt_recomendacion_personalizada)
-            print("Datos extraidos:", message_response.content)
+        elif intention.Personalized_recommendation:
+            prompt_personalized_recommendation = pro.recomendacion_personalizada_template.format(user_input=reformulated_question)
+            answer = llm_haiku.invoke(prompt_personalized_recommendation)
+            logger.info("Answer reformulated: %s", answer.content)
 
-            message_data = json.loads(message_response.content)  # Convertir a diccionario
+            message_data = json.loads(answer.content)
 
             # Validar y convertir 'Precio' si es necesario
             if "Precio" in message_data and isinstance(message_data["Precio"], list) and len(message_data["Precio"]) == 2:
-                message_data["Precio"] = tuple(message_data["Precio"])  # Asegurarte de que sea una tupla
+                message_data["Precio"] = tuple(message_data["Precio"])  
             elif "Precio" in message_data and not isinstance(message_data["Precio"], (tuple, list)):
                 print("Error: El campo 'Precio' tiene un formato incorrecto:", message_data["Precio"])
-                message_data["Precio"] = None  # O lanza una excepción si es crítico
-
-            # if isinstance(message_data.get("Precio"), tuple):
-            #     message_data["Precio"] = list(message_data["Precio"])
-
-            print("Datos de entrada (JSON):", message_data) #! OK
+                message_data["Precio"] = None 
             
-            filtros = FilterModel(
+            filters = FilterModel(
                 Marca=message_data.get("Marca"),
                 Sexo=message_data.get("Sexo"),
                 Forma=message_data.get("Forma"),
@@ -139,7 +126,7 @@ def get_qa(user_input: str, conversation: list):
                 Dureza=message_data.get("Dureza"),
                 Acabado=message_data.get("Acabado"),
                 Superficie=message_data.get("Superficie"),
-                Nucleo=message_data.get("Núcleo"),
+                Núcleo=message_data.get("Núcleo"),
                 Cara=message_data.get("Cara"),
                 Nivel_de_juego=message_data.get("Nivel_de_juego"),
                 Tipo_de_juego=message_data.get("Tipo_de_juego"),
@@ -147,59 +134,67 @@ def get_qa(user_input: str, conversation: list):
                 Precio_min=message_data.get("Precio_min"),
                 Precio_max=message_data.get("Precio_max")
             )
-            #print(f"Filtros creados: {filtros.__dict__}") #! Esto sale todo a None
-            #print("Claves esperadas por FilterModel:", FilterModel.__annotations__.keys()) #! Esto sale todo a None
 
-            message, recomendaciones = apply_filters(filtros) # Devolverá una lista de palas recomendadas y un mensaje de respuesta con la comparativa y recomendacion final
-
-            print("Recomendaciones:", recomendaciones)
-
+            chatbot_response, recommendations = apply_filters(filters) 
+            logger.info("Chatbot response (personalized_recommendation): %s", chatbot_response)
             return {
-                "tipo": "Recomendacion_personalizada",
-                "mensaje": message,
-                "recomendaciones": recomendaciones,
-                "imagen_url": None,
+                "type": "Personalized_recommendation",
+                "answer": chatbot_response,
+                "recommendations": recommendations,
+            }
+        
+        elif intention.Other:
+            prompt_message = pro.other_intention_template.format(user_input=reformulated_question, conversation=cleaned_conversation)
+            answer = llm_haiku.invoke(prompt_message)
+            chatbot_response = answer.content
+            logger.info("Chatbot response (other): %s", chatbot_response)
+            return {
+                "type": "Other",
+                "answer": chatbot_response
             }
 
         else:
-            mensaje_usuario = "Lo siento, soy un asistente virtual encargado únicamente al mundo del pádel. No puedo ayudarte con esa consulta."
+            prompt_message = pro.other_intention_template.format(user_input=reformulated_question, conversation=cleaned_conversation)
+            answer = llm_haiku.invoke(prompt_message)
+            chatbot_response = answer.content
+            logger.info("Chatbot response (other): %s", chatbot_response)
             return {
-                "tipo": "Otro",
-                "mensaje": mensaje_usuario
+                "type": "Other",
+                "answer": chatbot_response
             }
-    except ValueError as e:
-        logger.error(f"Error al desempaquetar valores: {e}")
-        return {"error": "Error al interpretar la consulta. Por favor, revisa tu entrada."}
     except Exception as e:
-        print(f"Error inesperado: {e}")
-        return {"error": f"Error interno: {str(e)}"}
+        logger.info("Unexcepted error in get_qa: %s", e)
+        return {"answer": "Lo siento, la consulta no se ha podido procesar."}
 
-def cargar_dataset():
+def load_dataset():
     with open(DATASET_PATH, "r", encoding="utf-8") as file:
         return json.load(file)
 
-def convertir_precio(precio_str: str) -> float:
+def convert_price(precio_str: str) -> float:
     """Convierte una cadena de precio con formato europeo a float."""
-    # Limpiar la cadena
-    precio_limpio = precio_str.replace("€", "").replace(",", ".").strip()  # Eliminar símbolo y reemplazar coma por punto
+    precio_limpio = precio_str.replace("€", "").replace(",", ".").strip()
     try:
         return float(precio_limpio)
     except ValueError:
         raise ValueError(f"No se pudo convertir el precio: {precio_str}")
 
 
-def formatear_recomendaciones(recomendaciones):
+def format_recommendations(recommendations):
     """Devuelve las recomendaciones formateadas como una cadena de texto legible."""
-    if not recomendaciones:
+    if not recommendations:
         return "No se encontraron palas de pádel que coincidan con tus criterios."
     
     mensaje = "Aquí tienes algunas recomendaciones de palas de pádel basadas en tus criterios:\n\n"
-    for pala in recomendaciones:
+    for pala in recommendations:
         mensaje += f"• **Nombre**: {pala['Nombre']}\n"
+        mensaje += f"  **Sexo**: {pala['Sexo']}\n"
         mensaje += f"  **Precio**: {pala['Precio']}\n"
         mensaje += f"  **Balance**: {pala['Balance']}\n"
         mensaje += f"  **Dureza**: {pala['Dureza']}\n"
+        mensaje += f"  **Núcleo**: {pala['Núcleo']}\n"
+        mensaje += f"  **Cara**: {pala['Cara']}\n"
         mensaje += f"  **Acabado**: {pala['Acabado']}\n"
+        mensaje += f"  **Forma**: {pala['Forma']}\n"
         mensaje += f"  **Superficie**: {pala['Superficie']}\n"
         mensaje += f"  **Tipo de juego**: {pala['Tipo de juego']}\n"
         mensaje += f"  **Nivel de juego**: {pala['Nivel de juego']}\n"
@@ -209,8 +204,6 @@ def formatear_recomendaciones(recomendaciones):
     return mensaje
 
 
-
-# Definir un modelo de datos con las características de las palas
 @dataclass
 class FilterModel:
     Marca: Optional[str] = None
@@ -222,31 +215,25 @@ class FilterModel:
     Dureza: Optional[str] = None
     Acabado: Optional[str] = None
     Superficie: Optional[str] = None
-    Nucleo: Optional[str] = None
+    Núcleo: Optional[str] = None
     Cara: Optional[str] = None
     Nivel_de_juego: Optional[str] = None
     Tipo_de_juego: Optional[str] = None
     Jugador_profesional: Optional[str] = None
 
 def apply_filters(filtros: FilterModel):
-    dataset = cargar_dataset()
+    dataset = load_dataset()
     
-    #filtros = filtros.model_dump()
     filtros = filtros.__dict__
-    print(f"Filtros aplicados: {filtros}")  #! No sale tipo_de_juego y nivel_de_juego
     
-    # Aplicar filtros sobre el dataset
-    recomendaciones = []
+    recommendations = []
     for pala in dataset:
-        #print(f"Pala: {pala}")
-        #print(f"Precio: {pala['Precio']}")
-        precio_float = convertir_precio(pala['Precio'])  # Convertir el precio a float
-        #print(f"Precio_float: {precio_float}")
+
+        precio_float = convert_price(pala['Precio'])
         precio_min = filtros.get('Precio_min', None)
         precio_max = filtros.get('Precio_max', None)
-        #print(f"Valor de precio_min: {precio_min}, de precio_max: {precio_max}")
 
-        # Filtros obligatorios (Jugador, Precio, Nivel de juego)
+        # Filtras por precio
         if precio_min is not None and precio_float < precio_min:
             continue
         if precio_max is not None and precio_float > precio_max:
@@ -255,27 +242,20 @@ def apply_filters(filtros: FilterModel):
         # Filtrar Jugador
         if filtros.get('Sexo'):
             jugador_seleccionado = filtros['Sexo'].lower()
-
-            #print("Sexo seleccionado:", jugador_seleccionado)
             
             if 'Sin dato' in pala['Sexo'].lower():
                 continue
-            # Si el jugador seleccionado es 'Hombre' o 'Mujer', también considerar las opciones 'Hombre, Mujer' y 'Mujer, Hombre'
             if jugador_seleccionado == 'hombre' and 'hombre' not in pala['Sexo'].lower() and 'hombre, mujer' not in pala['Sexo'].lower():
                 continue
             if jugador_seleccionado == 'mujer' and 'mujer' not in pala['Sexo'].lower() and 'hombre, mujer' not in pala['Sexo'].lower():
                 continue
-            # Si el jugador seleccionado es 'Junior', solo se devuelven las palas que tengan 'Junior'
             if jugador_seleccionado == 'junior' and 'junior' not in pala['Sexo'].lower():
                 continue
-
 
         # Filtro Balance 
         if filtros.get('Balance'):
             balance_selected = filtros['Balance'].lower()
             pala_balance = pala.get('Balance', '').lower()
-
-            #print("Balance seleccionado:", balance_selected)
 
             if 'Sin dato' in pala_balance:
                 continue
@@ -293,8 +273,6 @@ def apply_filters(filtros: FilterModel):
         if filtros.get('Dureza'):
             dureza_selected = filtros['Dureza'].lower()
             pala_dureza = pala.get('Dureza', '').lower()
-
-            #print("Dureza seleccionada:", dureza_selected)
                     
             if 'Sin dato' in pala_dureza:
                 continue
@@ -308,13 +286,10 @@ def apply_filters(filtros: FilterModel):
                 "dura" in pala_dureza or "dura, media" in pala_dureza):
                 continue
 
-
         # Filtro Acabado
         if filtros.get('Acabado'):
             acabado_selected = filtros['Acabado'].lower()
             pala_acabado = pala.get('Acabado', '').lower()
-
-            #print("Acabado seleccionado:", acabado_selected)
 
             if 'Sin dato' in pala_acabado:
                 continue
@@ -333,7 +308,7 @@ def apply_filters(filtros: FilterModel):
             if acabado_selected == "rugosa" and "rugosa" != pala_acabado:
                 continue
 
-            # Manejo de combinaciones inversas
+            # Manejo de combinaciones
             if acabado_selected in ["brillo, arenoso", "mate, arenoso", "relieve 3d, arenoso"]:
                 if not any(x in pala_acabado for x in [acabado_selected, "arenoso", acabado_selected.split(", ")[0]]):
                     continue
@@ -341,12 +316,10 @@ def apply_filters(filtros: FilterModel):
                 if not any(x in pala_acabado for x in [acabado_selected, acabado_selected.split(", ")[0], acabado_selected.split(", ")[1]]):
                     continue
 
-        # Filtro Superficie con combinaciones
+        # Filtro Superficie
         if filtros.get('Superficie'):
             superficie_selected = filtros['Superficie'].lower()
             pala_superficie = pala.get('Superficie', '').lower()
-
-            #print("Superficie seleccionada:", superficie_selected)
 
             if 'Sin dato' in pala_superficie:
                 continue
@@ -359,18 +332,15 @@ def apply_filters(filtros: FilterModel):
             if superficie_selected == "lisa" and "lisa" != pala_superficie:
                 continue
 
-            # Manejo de combinaciones inversas
+            # Manejo de combinaciones
             if superficie_selected == "rugosa, arenosa" and not any(
                 x in pala_superficie for x in ["rugosa", "arenosa", "rugosa, arenosa"]):
                 continue
 
-
-        # Filtro Tipo de Juego
+        # Filtro Tipo de juego
         if filtros.get('Tipo_de_juego'):
             tipo_juego_selected = filtros['Tipo_de_juego'].lower()
             pala_tipo_juego = pala.get('Tipo de juego', '').lower()
-
-            #print("Tipo de juego seleccionado:", tipo_juego_selected)
 
             if 'Sin dato' in pala_tipo_juego:
                 continue
@@ -386,13 +356,10 @@ def apply_filters(filtros: FilterModel):
                 x in pala_tipo_juego for x in ["control", "potencia", "control, potencia"]):
                 continue
 
-
         # Filtro Nivel de juego
         if filtros.get('Nivel_de_juego'):
             nivel_juego_selected = filtros['Nivel_de_juego'].lower()
             pala_nivel_juego = pala.get('Nivel de juego').lower()
-
-            #print("Nivel de juego seleccionado:", nivel_juego_selected)
 
             if 'Sin dato' in pala_nivel_juego:
                 continue
@@ -411,40 +378,67 @@ def apply_filters(filtros: FilterModel):
             if nivel_juego_selected == "avanzado / competición, principiante / intermedio" and not any(
                 x in pala_nivel_juego for x in ["avanzado / competición, principiante / intermedio", "principiante / intermedio", "avanzado / competición", "avanzado / competición, profesional"]):
                 continue
+        
+        # Filtrar por núcleo
+        if filtros.get('Núcleo'):
+            nucleo_selected = filtros['Núcleo'].lower()
+            pala_nucleo = pala.get('Núcleo', '').lower()
+
+            if 'Sin dato' in pala_nucleo:
+                continue
+            if nucleo_selected != pala_nucleo:
+                continue
+
+        # Filtrar por cara
+        if filtros.get('Cara'):
+            cara_selected = filtros['Cara'].lower()
+            pala_cara = pala.get('Cara', '').lower()
+
+            if 'Sin dato' in pala_cara:
+                continue
+            if cara_selected != pala_cara:
+                continue
+        
+        # Filtrar por Forma
+        if filtros.get('Forma'):
+            forma_selected = filtros['Forma'].lower()
+            pala_forma = pala.get('Forma', '').lower()
+
+            if 'Sin dato' in pala_forma:
+                continue
+            if forma_selected != pala_forma:
+                continue
 
         # Filtro Marca
         if filtros.get('Marca') and filtros['Marca'] and filtros['Marca'].lower() not in pala['Marca'].lower():
             continue
 
-
         # Filtro Forma
-        if filtros.get('Forma'): #! Antes estaba de otra forma asi que no se si estará bien
+        if filtros.get('Forma'): 
             forma_selected = filtros['Forma'].lower()
-
-            #print("Forma seleccionada:", forma_selected)
             
-            # Si el valor de forma en la pala es 'Sin dato', se pasa al siguiente filtro
             if 'Sin dato' in pala.get('Forma', '').lower():
                 continue
 
-            # Comprobación de forma
             if forma_selected and forma_selected != pala.get('Forma', '').lower():
                 continue
 
-
-        # Filtro Jugador profesional #! Cuidado con colección_jugadores que ahora se llama Jugador profesional
+        # Filtro Jugador profesional
         if filtros.get('Jugador_profesional') and filtros['Jugador_profesional'] and filtros['Jugador_profesional'].lower() != pala.get('Jugador profesional', '').lower():
             continue
 
-        # Añadir la pala si cumple todos los filtros aplicables
-        recomendaciones.append({
+        recommendations.append({
             "Nombre": pala["Nombre"],
+            "Sexo": pala["Sexo"],
             "Marca": pala["Marca"],
             "Color": pala["Color"],
             "Balance": pala["Balance"],
             "Dureza": pala["Dureza"],
             "Acabado": pala["Acabado"],
             "Superficie": pala["Superficie"],
+            "Núcleo": pala["Núcleo"],
+            "Cara": pala["Cara"],
+            "Forma": pala["Forma"],
             "Tipo de juego": pala["Tipo de juego"],
             "Nivel de juego": pala["Nivel de juego"],
             "Jugador profesional": pala["Jugador profesional"],
@@ -454,24 +448,17 @@ def apply_filters(filtros: FilterModel):
             "Descripción": pala["Descripción"]
         })
     
-    # Limitar el número de recomendaciones a 5
-    recomendaciones = recomendaciones[:10]
+    recommendations = recommendations[:5]
 
-    contexto = formatear_recomendaciones(recomendaciones)
+    context = format_recommendations(recommendations)
     llm_haiku = ChatBedrock(model_id=LLM_CLAUDE_3_HAIKU, client=claude_3_haiku_client)
-    #print("CONTEXTO",contexto) #! Debug OK
     
     try:
-        prompt_recommendations = prompt_template_recommendations.format(user_input=contexto, filters=filtros)
-        #print("PROMPT RECOMMENDATIONS",prompt_recommendations) #! Debug OK
+        prompt_recommendations = pro.prompt_template_recommendations.format(user_input=context, filters=filtros)
         respuesta = llm_haiku.invoke(prompt_recommendations)
-        #print("\nRESPUESTA: ", respuesta.content)
     
     except Exception as e:
         print("Error al generar recomendaciones:", e)
         respuesta = None
     
-    return respuesta.content, recomendaciones
-    # return {
-    #     "modelo_respuesta": respuesta.content if respuesta and respuesta.content else "No se puedo obtener una respuesta."
-    # }
+    return respuesta.content, recommendations

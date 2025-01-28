@@ -15,7 +15,6 @@ for _, row in df.iterrows():
         "Balance": row["Balance"],
         "Núcleo": row["Núcleo"],
         "Cara": row["Cara"],
-        "Formato": row["Formato"],
         "Dureza": row["Dureza"],
         "Acabado": row["Acabado"],
         "Forma": row["Forma"],

@@ -1,15 +1,14 @@
+"""Configuration file."""
+
 import logging
 import boto3
 from dotenv import load_dotenv
 import os
 from pathlib import Path
-from botocore.config import Config
 
 dotenv_path = Path(__file__).resolve().parent.parent.parent / '.env'
-# Cargar las variables de entorno desde el archivo .env
 load_dotenv(dotenv_path)
 
-# Obtener las claves de AWS desde las variables de entorno
 AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_REGION = os.getenv("AWS_REGION")
@@ -23,6 +22,8 @@ claude_3_haiku_client = boto3.client(
     aws_access_key_id=AWS_ACCESS_KEY_ID,
     aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
 )
+
+DATASET_PATH = os.getenv("DATASET_PATH")
 
 logging.basicConfig(
     level=logging.INFO,

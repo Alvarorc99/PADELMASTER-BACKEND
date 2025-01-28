@@ -1,5 +1,6 @@
 # Entorno virtual
 venv/
+
 # Archivos de configuración y entorno
 .env
 
@@ -11,11 +12,6 @@ __pycache__/
 
 # Configuración de IDEs
 .vscode/
-.idea/
 
 # Archivos de logs
 *.log
-
-# Archivos de sistema
-.DS_Store
-Thumbs.db

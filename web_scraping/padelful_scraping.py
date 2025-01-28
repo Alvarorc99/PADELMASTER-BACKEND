@@ -1,3 +1,5 @@
+"""Este archivo lo puedo eliminar del proyecto"""
+
 import time
 import pandas as pd
 import requests
