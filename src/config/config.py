@@ -34,12 +34,12 @@ logging.basicConfig(
 logger = logging.getLogger("PADELMASTER")
 
 # Verifica que las claves se han cargado correctamente
-# if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY and AWS_REGION and LLM_MODEL_NAME and EMBEDDING_MODEL_NAME:
+# if AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY and AWS_REGION and LLM_CLAUDE_3_HAIKU and EMBEDDING_MODEL_NAME:
 #     print("Las claves de AWS se han cargado correctamente.")
 #     print(f"AWS_ACCESS_KEY_ID: {AWS_ACCESS_KEY_ID}")
 #     print(f"AWS_SECRET_ACCESS_KEY: {AWS_SECRET_ACCESS_KEY}")
 #     print(f"AWS_REGION: {AWS_REGION}")
-#     print(f"LLM_MODEL_NAME: {LLM_MODEL_NAME}")
+#     print(f"LLM_MODEL_NAME: {LLM_CLAUDE_3_HAIKU}")
 #     print(f"EMBEDDING_MODEL_NAME: {EMBEDDING_MODEL_NAME}")
 # else:
 #     print("Error: No se pudieron cargar las claves de AWS.")

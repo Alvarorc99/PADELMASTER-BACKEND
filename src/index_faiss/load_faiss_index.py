@@ -33,15 +33,15 @@ def process_query(query):
     
         datos = json.loads(resultado)
         nombre_pala = datos.get("nombre_pala").strip().lower()
-        atributo = datos.get("atributo")
+        atributos = datos.get("atributos", [])
         
-        return nombre_pala, atributo
+        return nombre_pala, atributos
     except Exception as e:
         logging.error(f"Error inesperado al procesar la consulta: {str(e)}")
-        return None, None
+        return None, []
 
-def consult_faiss(index_path, nombre_pala, atributo):
-    logger.info(f"Consulting FAISS index with name: {nombre_pala}, attribute: {atributo}")
+def consult_faiss(index_path, nombre_pala, atributos):
+    logger.info(f"Consulting FAISS index with name: {nombre_pala}, attribute: {atributos}")
     embedding_model = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL_NAME)
     logging.info(f"Embeddings model '{EMBEDDING_MODEL_NAME}' loaded correctly.")
     vector_store = FAISS.load_local(index_path, embedding_model, allow_dangerous_deserialization=True)
@@ -63,30 +63,43 @@ def consult_faiss(index_path, nombre_pala, atributo):
 
         for result in results:
             if result.metadata.get('Nombre', '').strip().lower() == nombre_pala:
-                valor_atributo = result.metadata.get(atributo)
+                valores_atributos = {
+                    atributo: result.metadata.get(atributo, "Información no disponible")
+                    for atributo in atributos
+                }
                 imagen_url = result.metadata.get('Imagen', 'URL_DE_IMAGEN_POR_DEFECTO')
                 logger.info(f"Name found with exact match: '{nombre_pala}'.")
-                return {"exacto": {"atributo": valor_atributo, "imagen": imagen_url}, "similares": []}
+                return {"exacto": {"atributos": valores_atributos, "imagen": imagen_url}, "similares": []}
             
         return {"exacto": None, "similares": palas_similares}
     
     logger.info("No results were found in the FAISS index.")
     return {"exacto": None, "similares": []}
 
-def reformular_respuesta(respuesta_faiss, nombre_pala, atributo):
+def reformular_respuesta(respuesta_faiss, nombre_pala, atributos, conversation):
+    """
+    Reformula una respuesta unificada para todos los atributos solicitados de una pala.
+    """
     llm_haiku = ChatBedrock(model_id=LLM_CLAUDE_3_HAIKU, client=claude_3_haiku_client)
+
+    atributos_filtrados = {attr: respuesta_faiss[attr] for attr in atributos if attr in respuesta_faiss}
+    atributos_solicitados = ", ".join(atributos)
+    atributos_texto = "\n".join(
+        f"- {atributo}: {valor}" for atributo, valor in atributos_filtrados.items()
+    )
     
     prompt_reformulado = f"""
-    El usuario ha preguntado sobre el atributo '{atributo}' de la pala de pádel '{nombre_pala}'.
-    El valor del atributo encontrado es: '{respuesta_faiss}'.
+    El usuario ha preguntado sobre los atributos "{atributos_solicitados}" de la pala de pádel "{nombre_pala}".
+    Los valores de los atributos encontrados son: "{atributos_texto}".
+    Te proporciono el historial de conversación con el usuario por si es necesario: "{conversation}".
 
     Si el atributo se refiere a un precio, asegúrate de mencionar el valor numérico seguido de la moneda correspondiente.
     Si es otro tipo de atributo, como el balance, la marca, el color, el núcleo, la cara, el acabado, la forma, la superficie, el sexo, la dureza, el nivel de juego, el tipo de juego o el jugador profesional, proporciona la información de forma precisa y contextualizada.
     Evita incluir enlaces externos, sugerir fuentes adicionales o agregar información irrelevante.  
     La respuesta debe centrarse exclusivamente en la información solicitada y ser lo más útil posible para el usuario.  
 
-    Por favor, reformula la respuesta de manera adecuada y asegúrate de que sea fácil de entender para cualquier persona, independientemente de su nivel de conocimiento sobre el pádel.  
-    Responde de manera clara y amigable.
+    Por favor, genera una respuesta clara y detallada incluyendo todos los atributos y sus valores. 
+    Responde directamente al usuario de forma clara y amigable.
     """
 
     response = llm_haiku.invoke(prompt_reformulado)
@@ -100,6 +113,9 @@ def reformular_respuesta(respuesta_faiss, nombre_pala, atributo):
         return None, None
     
 def reformular_respuesta_sin_resultados(nombre_pala):
+    """
+    Reformula una respuesta para informar al usuario que no se ha encontrado ninguna pala con el nombre exacto solicitado.
+    """
     logger.info(f"Reformulating the answer of '{nombre_pala}'.")
     llm_haiku = ChatBedrock(model_id=LLM_CLAUDE_3_HAIKU, client=claude_3_haiku_client)
     
@@ -107,7 +123,7 @@ def reformular_respuesta_sin_resultados(nombre_pala):
     No se ha encontrado ninguna pala con el nombre exacto '{nombre_pala}' en nuestra base de datos.
     Indícale al usuario que la pala por la que ha preguntado no existe, pero puede hacer preguntas sobre las siguientes palas (no las estas viendo, pero el usuario si que tiene acceso a ellas). No menciones nombres de palas.
     Además, termina la respuesta con un mensaje del estilo "A continuación se muestran las palas más similares encontradas".
-    Por favor, responde de manera clara y amigable.
+    Por favor, responde de manera directa al usuario de forma clara y amigable.
     """
 
     response = llm_haiku.invoke(prompt_sin_respuesta)

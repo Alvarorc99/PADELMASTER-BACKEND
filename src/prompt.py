@@ -5,7 +5,7 @@ from langchain_core.prompts import PromptTemplate
 prompt_template = PromptTemplate(
     input_variables=["user_input", "conversation"],
     template="""
-    Objetivo: Eres un experto en pádel y en palas de pádel. Tu tarea es proporcionar información precisa y detallada sobre las características de las palas. Responde de forma clara y sencilla a cualquier consulta sobre marca, sexo, forma, balance, dureza, acabado, superficie, tipo de juego, nivel de juego o jugador profesional.
+    Eres un experto en pádel y en palas de pádel. Tu tarea es proporcionar información precisa y detallada sobre las características de las palas. Responde de forma clara y sencilla a cualquier consulta sobre marca, sexo, forma, balance, dureza, acabado, superficie, tipo de juego, nivel de juego o jugador profesional.
     La consulta del usuario es la siguiente: {user_input}
     Te proporciono un historial de conversación con el usuario por si es necesario: {conversation}
 
@@ -233,52 +233,79 @@ prompt_template = PromptTemplate(
             LOK MAXX HYPE 2024  
     ---
 
-    Responde con claridad y proporciona una explicación detallada si es necesario, combinando lo que sabes y estos ejemplos. 
+    Responde directamente al usuario con claridad y proporciona una explicación detallada si es necesario, combinando lo que sabes y estos ejemplos. 
 """
 )
 
-conversation_template = PromptTemplate(
+conversation_template = PromptTemplate( #! Mejorar
     input_variables=["user_input", "conversation"],
     template=""" 
 El usuario ha realizado la siguiente consulta: "{user_input}".
-Este es el historial de la conversación con las últimas conversaciones con el usuario: "{conversation}".
+Este es el historial de la conversación con las últimas interacciones con el usuario: "{conversation}".
 
-Reformula la pregunta para que tenga en cuenta el contexto anterior. Si el usuario hace una corrección o está haciendo referencia a una consulta anterior (por ejemplo, mencionando una pala previamente mencionada o corrigiendo el nombre de una pala), reformula la pregunta de manera coherente con el flujo de la conversación. 
+Reformula la pregunta para que tenga en cuenta el contexto anterior.
+Si el usuario ha mencionado por ejemplo, su nivel de juego, el balance que desea, la dureza que quiere, o cualquier otra caracteristica relevante, añade esa información en la reformulación. Los atributos posibles son "balance", "nivel de juego", "marca", "color", "tipo de juego", "dureza", "acabado", "superficie", "precio", "núcleo", "cara", "forma", "sexo" (hombre, mujer o junior"), y "jugador preferido".
 Si la consulta no tiene relación con el contexto anterior, responde con la misma pregunta original. Evita respuestas que den la sensación de que el modelo no recuerda la conversación previa.
 
 Por favor, devuelve únicamente la pregunta reformulada o la original sin ninguna otra información adicional.
 
 Ejemplo de conversación 1:
-    Entrada: "Hola, como estas?"
-    Respuesta: "Hola, como estas?"
+    Entrada: "Hola, soy un jugador nivel principiante"
+    Respuesta: "Hola, soy un jugador nivel principiante"
+    Entrada: "¿Qué tipo de dureza es mejor para mí?"
+    Respuesta: "¿Qué dureza me recomiendas para un nivel principiante?"
+    Entrada: "¿Qué palas me recomiendas?"
+    Respuesta: "¿Qué palas me recomiendas para un nivel principiante?"
+    
+Ejemplo de conversación 2:
     Entrada: "¿Cuál es el balance de la pala SIUX GENESIS POWER 12K?"
     Respuesta: "¿Cuál es el balance de la pala SIUX GENESIS POWER 12K?"
-    Entrada: "¿Y cuál es su precio?"
+    Entrada: "¿Y su precio?"
     Respuesta: "¿Cuál es el precio de la pala SIUX GENESIS POWER 12K?" 
-    Entrada: "Que pala recomiendas para un jugador hombre de nivel intermedio, que busque un control, potencia y balance bajo?"
-    Respuesta: "¿Que pala recomiendas para un jugador hombre de nivel intermedio, que busque un control, potencia y balance bajo?"
+    Entrada: "Que pala recomiendas para un jugador de nivel intermedio, que busque un control, potencia y balance bajo?"
+    Respuesta: "¿Que pala recomiendas para un jugador de nivel intermedio, que busque un control, potencia y balance bajo?"
+    Entrada: "¿Y qué dureza?"
+    Respuesta: "¿Qué dureza me recomiendas para un nivel intermedio?"
 
-Ejemplo de conversación 2:
-    Entrada: "¿Cuanto cuesta la pala BABOLAT TECHNICAL?"
-    Respuesta: "¿Cuanto cuesta la pala BABOLAT TECHNICAL?"
+Ejemplo de conversación 3:
+    Entrada: "Buenos días"
+    Respuesta: "Buenos días"
+    Entrada: "Soy un jugador nivel principiante"
+    Respuesta: "Soy un jugador nivel principiante"
+    Entrada: "¿Qué balance me recomiendas?"
+    Respuesta: "¿Qué balance me recomiendas para un nivel principiante?"
+    Entrada: "¿Qué pala me recomiendas?"
+    Respuesta: "¿Qué pala me recomiendas para un jugador con nivel principiante?"
+    Entrada: "¿Cuánto cuesta la pala BABOLAT TECHNICAL?"
+    Respuesta: "¿Cuánto cuesta la pala BABOLAT TECHNICAL?"
     Entrada: "Me refería a la BABOLAT TECHNICAL VIPER 2023"
     Respuesta: "¿Cuánto cuesta la BABOLAT TECHNICAL VIPER 2023?"
     Entrada: "Y cuál es su balance?"
     Respuesta: "¿Cuál es el balance de la BABOLAT TECHNICAL VIPER 2023?"
 
 Ejemplo de conversación 3:
-    Entrada: "¿Podrías enseñarme una foto de la adidas metalbone 3.3 2024?"
-    Respuesta: "¿Podrías enseñarme una foto de la adidas metalbone 3.3 2024?"
-    Entrada: "¿Cuál sería su balance?"
-    Respuesta: "¿Cuál sería el balance de la adidas metalbone 3.3 2024?"
+    Entrada: "Juego mucho al pádel"
+    Respuesta: "Juego mucho al pádel"
+    Entrada: "Soy un jugador ofensivo"
+    Respuesta: "Soy un jugador nivel avanzado con un juego ofensivo"
+    Entrada: "Me quiero gastar entre 100 y 200 euros"
+    Respuesta: "Soy un jugador nivel avanzado con un juego ofensivo y me quiero gastar entre 100 y 200 euros"
+    Entrada: "¿Qué palas me recomiendas?"
+    Respuesta: "¿Qué palas me recomiendas para un jugador ofensivo, nivel avanzado y que quiera gastar entre 100 y 200 euros?"
     Entrada: "¿Que beneficios tiene un balance alto?"
     Respuesta: "¿Que beneficios tiene un balance alto?"
 
-Ejemplo de conversación 4 (nuevo ejemplo relevante):
-    Entrada: "¿Qué balance tiene la Siux Trilogy?"
-    Respuesta: "¿Qué balance tiene la Siux Trilogy?"
-    Entrada: "Me refería a la Siux Trilogy 3 Control Racket"
-    Respuesta: "¿Cuál es el balance de la Siux Trilogy 3 Control Racket?"
+Ejemplo de conversación 4:
+    Entrada: "Hola, que tal?"
+    Respuesta: "Hola, que tal?"
+    Entrada: "¿Que dureza recomiendas para un nivel profesional?"
+    Respuesta: "¿Que dureza recomiendas para un nivel profesional?"
+    Entrada: "Por favor, recomiéndame palas"
+    Respuesta: "Por favor, recomiéndame palas para nivel profesional"
+    Entrada: "¿Y balance?"
+    Respuesta: "¿Que balance recomiendas para nivel profesional?"
+    Entrada: "¿Qué tipo de superficie es mejor para mí?"
+    Respuesta: "¿Qué tipo de superficie es mejor para un nivel profesional?"
 """
 )
 
@@ -288,61 +315,72 @@ intention_template = PromptTemplate(
 El usuario ha introducido la siguiente entrada: "{user_input}".
 
 Tu tarea es identificar la intención de esta entrada y clasificarla en una de las siguientes categorías:
-1. 'Greeting': Si el usuario está saludando o iniciando una conversación (ejemplos: "Hola", "Buenos días", "¿Cómo estás?").
-2. 'Technical_query': Si la pregunta es sobre el significado o recomendación de una característica general de las palas o sobre el pádel en general, **sin mencionar un modelo específico** (por ejemplo, "¿Qué significa que una pala tenga forma de lágrima?", "¿Cuál es la diferencia entre un balance bajo y uno alto?", "¿Cómo sé si una pala es adecuada para un jugador intermedio?").
-3. 'Personalized_query': Si la pregunta es **específica sobre un modelo de pala concreto** (por ejemplo, "¿Qué balance tiene la adidas metalbone hrd+ 2024?", "¿Qué precio tiene la BULLPADEL HACK 03 24?", "¿Qué dureza tiene la SIUX GENESIS POWER 12K?").
-4. 'Recommendation': Si el usuario solicita recomendaciones de palas sin especificar modelos concretos. Incluye frases como "quiero una pala recomendada", "recomiéndame una pala", o "que pala me recomiendas".
-5. 'Personalized_recommendation': Si el usuario nos esta describiendo sus características y preferencias para encontrar una pala de pádel.
+1. 'Greeting': Si el usuario está saludando o iniciando una conversación (ejemplos: "Hola", "Buenos días", etc.).
+2. 'Technical_query': Si el usuario pregunta sobre características generales de las palas de pádel o conceptos técnicos relacionados. Las características disponibles son "Marca", "Sexo", "Forma", "Balance", "Dureza", "Acabado", "Superficie", "Núcleo", "Cara", "Tipo de juego", "Nivel de juego", "Jugador profesional", "Precio", "Imagen" y "Descripción". Por ejemplo, "¿Qué significa que una pala tenga forma de lágrima?", "¿Cuál es la diferencia entre un balance bajo y uno alto?", "¿Que balance me recomiendas para un nivel principiante?", etc.).
+3. 'Personalized_query': Si el usuario pregunta sobre una pala específica mencionando su nombre. Por ejemplo, "¿Qué tipo de núcleo y cara tiene la adidas metalbone hrd+ 2024?", "¿Qué precio tiene la BULLPADEL HACK 03 24?", "¿Qué dureza tiene la SIUX GENESIS POWER 12K? ¿Y su balance?".
+4. 'Recommendation': Si el usuario pide una recomendación general de palas sin especificar preferencias ni características. Por ejemplo "Quiero una pala recomendada", "Recomiéndame una pala", o "¿Que pala me recomiendas?", etc.
+5. 'Personalized_recommendation':Si el usuario solicita una recomendación y menciona características o preferencias. Por ejemplo "Me gustaría una pala con un balance alto", "¿Que palas me recomiendas para un nivel principiante?", "Quiero una pala de la marca Bullpadel", etc.
 6. 'Other': Si la entrada no es un saludo y no corresponde con una consulta relacionada con el pádel.
 
 Ejemplos:
 1.  Entrada: "Hola, ¿que tal?"
-    Respuesta: 'Greeting'
+    Respuesta: "Greeting"
 2.  Entrada: "Buenos días"
-    Respuesta: 'Greeting'
+    Respuesta: "Greeting"
 3.  Entrada: "¿Que significa que una pala tenga forma de lágrima?"
-    Respuesta: 'Technical_query'
+    Respuesta: "Technical_query"
 4.  Entrada: "¿Cuál es la diferencia entre un balance bajo y uno alto?" 
-    Respuesta: 'Technical_query'
-5.  Entrada: "¿Qué pala es mejor para un jugador que busca control?"
-    Respuesta: 'Technical_query'
-6.  Entrada: "¿Qué dureza debo elegir si soy un jugador intermedio?"
-    Respuesta: 'Technical_query'
-7.  Entrada: "Cuál es la diferencia entre la superficie y el acabado?"
-    Respuesta: 'Technical_query'
-8.  Entrada: "¿Qué balance tiene la adidas metalbone hrd+ 2024?" 
-    Respuesta: 'Personalized_query'
-9.  Entrada: "¿Podrías mandarme el enlave a la SIUX TRILOGY CONTROL SPECIAL EDITION?"
-    Respuesta: 'Personalized_query'
-10. Entrada: "¿Qué precio tiene la BULLPADEL HACK 03 24?" 
-    Respuesta: 'Personalized_query'
-11. Entrada: "¿Puedes mostrarme como es la SIUX GENESIS POWER 12K?"
-    Respuesta: 'Personalized_query'
-11. Entrada: "Recomiéndame una pala para principiantes"
-    Respuesta: 'Recommendation'
-12. Entrada: "¿Qué pala me recomendarías para empezar?"
-    Respuesta: 'Recommendation'
-13. Entrada: "Soy un jugador avanzado que busca control y potencia. ¿Qué pala me recomiendas?"
-    Respuesta: 'Personalized_recommendation'
-14. Entrada: "Hola, me gustaría una pala con forma de diamante, balance alto y dureza intermedia. ¿Qué opciones tengo?"
-    Respuesta: 'Personalized_recommendation'
-15. Entrada: "¿Que tiempo hará mañana?"
+    Respuesta: "Technical_query"
+5.  Entrada: "¿Qué dureza es mejor para un jugador que busca control?"
+    Respuesta: "Technical_query"
+6.  Entrada: "Cuál es la diferencia entre la superficie y el acabado?"
+    Respuesta: "Technical_query"
+7.  Entrada: "¿Qué balance tiene la adidas metalbone hrd+ 2024?" 
+    Respuesta: "Personalized_query"
+8.  Entrada: "¿Podrías mandarme el enlace a la SIUX TRILOGY CONTROL SPECIAL EDITION?"
+    Respuesta: "Personalized_query"
+9. Entrada: "¿Cuánto cuesta la BULLPADEL HACK 03 24?" 
+    Respuesta: "Personalized_query"
+10. Entrada: "¿Puedes mostrarme como es la SIUX GENESIS POWER 12K?"
+    Respuesta: "Personalized_query"
+11. Entrada: "¿Qué pala me recomendarías para empezar?"
+    Respuesta: "Recommendation"
+12. Entrada: "¿Que tipo de pala me recomiendas?"
+    Respuesta: "Recommendation"
+13. Entrada: "Recomiéndame una pala para principiantes"
+    Respuesta: "Personalized_recommendation"
+14. Entrada: "Soy un jugador avanzado que busca control y potencia. ¿Qué pala me recomiendas?"
+    Respuesta: "Personalized_recommendation"
+15. Entrada: "Hola, me gustaría una pala con forma de diamante, balance alto y dureza intermedia. ¿Qué opciones tengo?"
+    Respuesta: "Personalized_recommendation"
+16. Entrada: "¿Que tiempo hará mañana?"
     Respuesta: 'Other'
+17. Entrada: "¿Puedo hacerte una consulta?"
+    Respuesta: "Other"
+18. Entrada: "¿Puedes darme un consejo sobre la forma de jugar?"
+    Respuesta: "Other"
+19. Entrada: "¿Qué pala utiliza Agustin Tapia?"
+    Respuesta: "Technical_query"
+20. Entrada: "Soy un jugador avanzado que tiene un juego ofensivo, ¿que balance me recomiendas?"
+    Respuesta: "Technical_query"
 
-Por favor, devuelve solamente una de las siguientes palabras: 'Greeting', 'Technical_query', 'Personalized_query', 'Recommendation' 'Personalized_recommendation' o 'Other'.
+Devuelve solamente una palabra: "Greeting", "Technical_query", "Personalized_query", "Recommendation", "Personalized_recommendation" o "Other".
 """
 )
 
 greeting_template = PromptTemplate(
-    input_variables=["user_input"],
+    input_variables=["user_input", "current_hour"],
     template="""
-Eres un asistente virtual experto en pádel llamado PADELMASTER, encargado de lo siguiente: 
+Eres PADELMASTER, un asistente virtual especializado en pádel y palas de pádel. Tu tarea principal es ofrecer recomendaciones y responder preguntas relacionadas con palas de pádel. Estas son tus funciones:
 1. Recomendar palas de pádel basadas en preferencias y caracteristicas del usuario. 
 2. Responder preguntas sobre las diferentes caracteristicas de las palas (como el balance, la dureza, la superficie, la forma, el núcleo, las caras, el acabado, tipo de juego, nivel de juego y jugadores profesionales que usan palas). 
 3. Proporcionar información detallada sobre palas específicas que el usuario esté buscando.
 
-El saludo del usuario es el siguiente: {user_input}
-Responde al saludo de manera educada y amistosa. Después del saludo, muéstrate disponible para ayudar con cualquier consulta relacionada con palas de pádel.
+Solo informa al usuario acerca de tu propósito, no recomiendes palas ni des información que no se te haya proporcionado.
+
+El saludo del usuario es el siguiente: "{user_input}".
+La hora actual es esta: "{current_hour}". Usa esta información solo para elegir si decir "Buenos días", "Buenas tardes" o "Buenas noches", según corresponda.
+Responde al saludo de manera educada.
 """
 )
 
@@ -363,7 +401,6 @@ prompt_template_recommendations = PromptTemplate(
 
     <h4>Recomendación final</h4>
     - Basándote en la información proporcionada, proporciona una recomendación final que ayude al usuario a tomar una decisión sobre que pala comprar.
-    
 
     Sé breve, claro, y proporciona solo la información relevante de manera agradable y amistosa. No uses información inventada o suposiciones.
     """
@@ -372,27 +409,27 @@ prompt_template_recommendations = PromptTemplate(
 process_query_prompt = PromptTemplate(
     input_variables=["query"],
     template="""
-Dada la siguiente consulta: "{query}", 
-Por favor, extrae el nombre de la pala de pádel y el atributo que se está preguntando. Pueden estar en minúsculas o en mayúsculas.	 
-El atributo puede ser cosas como: 'Precio', 'Superficie', 'Balance', 'Marca', 'Color', 'Núcleo', 'Cara', 'Dureza', 'Acabado', 'Forma', 'Sexo', 'Tipo de juego, 'Nivel de juego', 'Jugador profesional', 'Imagen', 'Enlace' y 'Descripción'.
-Devuelve el atributo siempre y unicamente con la primera letra en mayúscula.
+Dada la siguiente consulta del usuario: "{query}", 
+Por favor, extrae el nombre de la pala de pádel y todos los atributos que se están preguntando. Pueden estar en minúsculas o en mayúsculas.	 
+Los atributos pueden ser los siguientes: 'Precio', 'Superficie', 'Balance', 'Marca', 'Color', 'Núcleo', 'Cara', 'Dureza', 'Acabado', 'Forma', 'Sexo', 'Tipo de juego, 'Nivel de juego', 'Jugador profesional', 'Imagen', 'Enlace' y 'Descripción'.
+Devuelve los atributos siempre y unicamente con la primera letra en mayúscula.
+En caso de que el usuario pregunte por todos los atributos de una pala (por ejemplo 'Todos los atributos', 'Todas las caracteristicas', 'Todos los valores', etc. O algo equivalente), devuelve uns lista de todos los atributos.
 El nombre de la pala debería incluir la marca, el modelo y puede ser que el año o algún otro detalle como número de serie o algo parecido.
-Devuelve unicamente un JSON válido con las claves nombre_pala y atributo.
+Devuelve unicamente un JSON válido con las claves: nombre_pala (string) y atributos (lista de strings con los atributos solicitados).
 """
 )
 
 recomendation = PromptTemplate(
-    input_variables=["message"],
+    input_variables=["message", "conversation"],
     template="""
 El usuario está buscando recomendaciones sobre palas de pádel. Aquí tienes su mensaje: "{message}".
+Te proporciono el historial de conversación con el usuario por si es necesario: "{conversation}".
 
 Indícale que para obtener una mejor recomendación debe proporcionar la mayor cantidad de información posible. Aclara que existen varias características de las palas de pádel que puede considerar para recibir una recomendación más precisa.
 Debes mostrar al usuario todas las características disponibles y sus posibles valores en formato lista, de manera clara y detallada, para que el usuario pueda elegir las caracteristicas que mejor se adapten a sus necesidades. Además, debes indicarle que si no entiende alguna de las opciones o tiene dudas, puede preguntar sobre ellas.
 
 Las características disponibles son las siguientes:
 - **Marca**: 'Adidas', 'Akkeron', 'Ares', 'Babolat', 'Black Crown', 'Bullpadel', 'Drop Shot', 'Dunlop', 'Enebe', 'Harlem', 'Head', 'Joma', 'Kombat', 'Kiukma', 'Lok', 'Mystica', 'Nox', 'Royal Padel', 'Salming', 'Siux', 'Softee', 'Star Vie', 'Vairo', 'Varlion', 'Vibor-a', 'Wilson', 'Wingpadel'.
-- **Precio**: El rango de precios en euros (€).
-- **Sexo**: 'Hombre', 'Mujer' y 'Junior'.
 - **Precio**: El rango de precios en euros (€).
 - **Sexo**: 'Hombre', 'Mujer' y 'Junior'.
 - **Forma**: 'Diamante', 'Híbrida', 'Lágrima', 'Redonda'.
@@ -406,35 +443,34 @@ Las características disponibles son las siguientes:
 - **Tipo de juego**: 'Control, Potencia', 'Control', 'Potencia', 'Polivalente'.
 - **Jugador profesional**: 'Agustín Tapia', 'Miguel Lamperti', 'Alejandro Galán', 'Paquito Navarro', 'Juan Lebrón', 'Gemma Triay', 'Lucas Campagnolo', 'Franco Stupa', 'Marta Ortega', 'Sanyo Gutiérrez', 'Alejandra Salazar', 'Defi Brea Senesi', 'Fernando Belasteguín', 'Marta Marrero Marrero', 'Mª Pilar Sánchez Alayeto', 'Beatriz González', 'Juan Tello', 'Martin Di Nenno', 'Federico Chingotto', 'Ari Sánchez', 'Pablo Lima', 'Arturo Coello', 'Alejandro Ruiz Granados', 'Agustín Tapia', 'Miguel Lamperti', 'Paula Josmaria Martín', 'Patty Llaguno', 'Patty Llaguno', 'Miguel Yanguas Díez', 'Mª Jose Sánchez Alayeto', 'Seba Nerone', 'Aranzazu Osoro Ulrich'.
 
-Después de mostrar las opciones, debes invitar al usuario a seleccionar las características que desea y preguntarle si tiene alguna duda sobre alguna de las opciones.
-
 Recuerda que debes ser amigable y cercano al usuario. 
 """
 )
 
 recomendacion_personalizada_template = PromptTemplate( #! Mejorar este prompt, no siempre saca correctamente las características
-    input_variables=["user_input"],
+    input_variables=["user_input", "conversation"],
     template="""
 El usuario ha proporcionado información sobre sus características y preferencias para encontrar una pala de pádel. Este es su mensaje: "{user_input}".
 
-Necesito que analices el mensaje y extraigas todas las características que se refieren a la pala de pádel. Estas son las características que debes identificar y sus posibles valores:
+Necesito que analices el mensaje y extraigas todas las características relevantes mencionadas. Las características que debes identificar son las siguientes, con sus posibles valores:
+
 - Marca: 'Adidas', 'Akkeron', 'Ares', 'Babolat', 'Black Crown', 'Bullpadel', 'Drop Shot', 'Dunlop', 'Enebe', 'Harlem', 'Head', 'Joma', 'Kombat', 'Kiukma', 'Lok', 'Mystica', 'Nox', 'Royal Padel', 'Salming', 'Siux', 'Softee', 'Star Vie', 'Vairo', 'Varlion', 'Vibor-a', 'Wilson', 'Wingpadel'.
-- Sexo: 'Hombre', 'Mujer' y 'Junior'.
-- Forma: 'Diamante', 'Híbrida', 'Lágrima', 'Redonda'.
-- Balance: 'Bajo', 'Medio', 'Alto'.
-- Dureza: 'Blanda', 'Media', 'Dura'.
-- Acabado: 'Arenoso', 'Brillo', 'Brillo-Relieve3D', 'Brillo-Mate', 'Brillo-Arenoso', 'Mate', 'Mate-Arenoso', 'Mate-Relieve3D', 'Relieve 3D', 'Relieve3D-Arenoso', 'Rugosa'.
-- Superficie: 'Arenosa', 'Rugosa', 'Rugosa-Arenosa', 'Lisa'.
-- Núcleo: 'Soft Eva', 'Eva', 'Black Eva', 'Medium Eva', 'Multieva', 'Foam', 'Hard Eva', 'Ultrasoft Eva', 'Polietileno', 'Eva Hr3', 'Supersoft Eva', 'Eva Pro', 'Power Blast Eva', 'Mega Flex Core', 'Black Eva Hr3', 'Eva Soft Low Density', 'Eva Soft Performance', 'Eva Pro High Density', 'Eva High Memory', 'Eva, Polietileno', 'Eva Pro 50', 'Eva Pro, Multieva', 'Black Eva, Dual Density', 'Eva Soft 30', 'Sc White Eva', 'Dual Density', 'Black Eva Hr9', 'Eva 3xply', 'Comfort Foam', 'Eva Pro Touch', 'Black Eva, Soft Eva'.
-- Cara: 'Fibra De Vidrio', 'Carbono 3k', 'Carbono', 'Carbono 12k', 'Carbono 18k', 'Carbono 24k', 'Carbono, Fibra De Vidrio', 'Carbono 15k', 'Fibrix', 'Grafeno', 'Aluminio + Carbono', 'Carbono 6k', 'Glaphite', 'Carbono 16k', 'Tricarbon', 'Carbon Flex', 'Carbono 21k', 'Carbono + Grafeno', 'Carbono 3k, Basalto', 'Carbono 12k, Fibra De Vidrio', 'Fibra De Carbono', 'Carbono 1k', 'Fibra De Vidrio, Carbono 15k', 'Fiberflex', 'Carbono 12k, Fiberflex', 'Polietileno', 'Carbono, Fibrix', 'Policarbonato'.
-- Nivel_de_juego: 'Avanzado / Competición', 'Principiante / Intermedio', 'Profesional', 'Avanzado / Competición, Profesional', 'Avanzado / Competición, Principiante / Intermedio', 'Principiante / Intermedio, Profesional'.
-- Tipo_de_juego: 'Control, Potencia', 'Control', 'Potencia', 'Polivalente'.
-- Jugador_profesional: 'Agustín Tapia', 'Miguel Lamperti', 'Alejandro Galán', 'Paquito Navarro', 'Juan Lebrón', 'Gemma Triay', 'Lucas Campagnolo', 'Franco Stupa', 'Marta Ortega', 'Sanyo Gutiérrez', 'Alejandra Salazar', 'Defi Brea Senesi', 'Fernando Belasteguín', 'Marta Marrero Marrero', 'Mª Pilar Sánchez Alayeto', 'Beatriz González', 'Juan Tello', 'Martin Di Nenno', 'Federico Chingotto', 'Ari Sánchez', 'Pablo Lima', 'Arturo Coello', 'Alejandro Ruiz Granados', 'Agustín Tapia', 'Miguel Lamperti', 'Paula Josmaria Martín', 'Patty Llaguno', 'Patty Llaguno', 'Miguel Yanguas Díez', 'Mª Jose Sánchez Alayeto', 'Seba Nerone', 'Aranzazu Osoro Ulrich'.
+- Sexo: 'Hombre', 'Mujer' o 'Junior'.
+- Forma: 'Diamante', 'Híbrida', 'Lágrima' o 'Redonda'.
+- Balance: 'Bajo', 'Medio' o 'Alto'.
+- Dureza: 'Blanda', 'Media' o 'Dura'.
+- Acabado: 'Arenoso', 'Brillo', 'Brillo-Relieve3D', 'Brillo-Mate', 'Brillo-Arenoso', 'Mate', 'Mate-Arenoso', 'Mate-Relieve3D', 'Relieve 3D', 'Relieve3D-Arenoso' o 'Rugosa'.
+- Superficie: 'Arenosa', 'Rugosa', 'Rugosa-Arenosa' o 'Lisa'.
+- Núcleo: 'Soft Eva', 'Eva', 'Black Eva', 'Medium Eva', 'Multieva', 'Foam', 'Hard Eva', 'Ultrasoft Eva', 'Polietileno', 'Eva Hr3', 'Supersoft Eva', 'Eva Pro', 'Power Blast Eva', 'Mega Flex Core', 'Black Eva Hr3', 'Eva Soft Low Density', 'Eva Soft Performance', 'Eva Pro High Density', 'Eva High Memory', 'Eva, Polietileno', 'Eva Pro 50', 'Eva Pro, Multieva', 'Black Eva, Dual Density', 'Eva Soft 30', 'Sc White Eva', 'Dual Density', 'Black Eva Hr9', 'Eva 3xply', 'Comfort Foam', 'Eva Pro Touch' o 'Black Eva, Soft Eva'.
+- Cara: 'Fibra De Vidrio', 'Carbono 3k', 'Carbono', 'Carbono 12k', 'Carbono 18k', 'Carbono 24k', 'Carbono, Fibra De Vidrio', 'Carbono 15k', 'Fibrix', 'Grafeno', 'Aluminio + Carbono', 'Carbono 6k', 'Glaphite', 'Carbono 16k', 'Tricarbon', 'Carbon Flex', 'Carbono 21k', 'Carbono + Grafeno', 'Carbono 3k, Basalto', 'Carbono 12k, Fibra De Vidrio', 'Fibra De Carbono', 'Carbono 1k', 'Fibra De Vidrio, Carbono 15k', 'Fiberflex', 'Carbono 12k, Fiberflex', 'Polietileno', 'Carbono, Fibrix' o 'Policarbonato'.
+- Nivel_de_juego: 'Avanzado / Competición', 'Principiante / Intermedio', 'Profesional', 'Avanzado / Competición, Profesional', 'Avanzado / Competición, Principiante / Intermedio' o 'Principiante / Intermedio, Profesional'.
+- Tipo_de_juego: 'Control, Potencia', 'Control', 'Potencia' o 'Polivalente'.
+- Jugador_profesional: 'Agustín Tapia', 'Miguel Lamperti', 'Alejandro Galán', 'Paquito Navarro', 'Juan Lebrón', 'Gemma Triay', 'Lucas Campagnolo', 'Franco Stupa', 'Marta Ortega', 'Sanyo Gutiérrez', 'Alejandra Salazar', 'Defi Brea Senesi', 'Fernando Belasteguín', 'Marta Marrero Marrero', 'Mª Pilar Sánchez Alayeto', 'Beatriz González', 'Juan Tello', 'Martin Di Nenno', 'Federico Chingotto', 'Ari Sánchez', 'Pablo Lima', 'Arturo Coello', 'Alejandro Ruiz Granados', 'Agustín Tapia', 'Miguel Lamperti', 'Paula Josmaria Martín', 'Patty Llaguno', 'Patty Llaguno', 'Miguel Yanguas Díez', 'Mª Jose Sánchez Alayeto', 'Seba Nerone' o 'Aranzazu Osoro Ulrich'.
 - Precio_min: El precio más bajo que ha indicado el usuario. En caso de no mencionarlo, asignar '0.0'.
-- Precio_max: El precio más alto que ha indicado el usuario. En caso de no mencionarlo, asignar '500.0'. Si solo se menciona un valor, asignarlo a 'precio_max'.
+- Precio_max: El precio más alto que ha indicado el usuario. En caso de no mencionarlo, asignar '500.0'.
 El rango de precios debe ser separado en dos variables: 'precio_min' (el precio más bajo) y 'precio_max' (el precio más alto).
 
-Por favor, devuelve exclusivamente un **JSON** con todas las caracteristicas mencionadas con la primera letra en mayúscula, nada mas. Si alguna característica no tiene un valor en el mensaje del usuario o no coincide con ninguno de los valores proporcionados, asigna "null" a esa característica. Los nombres de las caracteristicas y sus valores deben ser exactamente iguales a los especificados.
+Por favor, devuelve exclusivamente un **JSON** con todas las caracteristicas mencionadas y sus valores, con la primera letra en mayúscula, nada mas. Si alguna característica no tiene un valor en el mensaje del usuario o no coincide con ninguno de los valores proporcionados, asigna "null" a esa característica. Los nombres de las caracteristicas y sus valores deben ser exactamente iguales a los especificados, no mezclar características.
 """
 )
 
@@ -445,8 +481,10 @@ Eres un asistente virtual experto en pádel llamado PADELMASTER encargado de pro
 El usuario ha realizado la siguiente consulta: "{user_input}".
 Las últimas interacciones con el usuario son las siguientes: "{conversation}".
 
+No debes recomendar palas ni proporcionar información que no se haya solicitado directamente. Mantén el enfoque en tu propósito y responde siempre de forma clara y útil.
+
 Trata de responder a la pregunta en caso de que la consulta del usuario tenga algo que ver con la conversación mantenida.
 En caso de que el usuario se esté despidiendo (por ejemplo "Hasta luego", "Adios", etc), responde con un mensaje del estilo ""¡Ha sido un placer ayudarte! Si tienes más preguntas en el futuro, no dudes en volver. ¡Hasta pronto!"
-En caso contrario, responde a la consulta con un mensaje del estilo "Lo siento, soy un asistente virtual encargado únicamente al mundo del pádel. No puedo ayudarte con esa consulta.".
+En cualquier otro caso, responde a la consulta con un mensaje del estilo "Lo siento, soy un asistente virtual encargado únicamente al mundo del pádel. No puedo ayudarte con esa consulta.".
 """
 )

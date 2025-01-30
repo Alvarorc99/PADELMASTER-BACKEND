@@ -4,6 +4,7 @@ from dataclasses import dataclass
 import json
 from typing import Optional
 from langchain_aws import ChatBedrock
+from datetime import datetime
 import src.prompt as pro
 import src.schemas as sch
 from src.index_faiss.load_faiss_index import process_query, consult_faiss, reformular_respuesta, reformular_respuesta_sin_resultados
@@ -21,11 +22,20 @@ def get_qa(user_input: str, conversation: list):
         Respuesta en formato JSON.
     """   
     try:
-        logger.info("User input received: %s", user_input)
+        #logger.info("User input received: %s", user_input)
 
-        conversation_window = conversation[-3:]
-        cleaned_conversation = [{'usuario': item['user_input'], 'respuesta': item['answer'], 'tipo': item['type']} for item in conversation_window]
-        logger.debug("Conversation cleaned context: %s", cleaned_conversation)
+        conversation_window = conversation[-5:]
+        cleaned_conversation = [ #! Comprobar bien esto
+            {
+                'usuario': item['user_input'], 
+                'respuesta': item['answer'], 
+                'tipo': item['type']
+            } 
+                for item in conversation_window
+        ]
+        print("##################################")
+        print("Conversation cleaned context: ", cleaned_conversation)
+        logger.debug("Cleaned conversation context: %s", cleaned_conversation)
 
         llm_haiku = ChatBedrock(model_id=LLM_CLAUDE_3_HAIKU, client=claude_3_haiku_client)
 
@@ -39,7 +49,8 @@ def get_qa(user_input: str, conversation: list):
         logger.info("User intention determined: %s", intention)
 
         if intention.Greeting:
-            prompt_message = pro.greeting_template.format(user_input=user_input)
+            current_hour = datetime.now().hour
+            prompt_message = pro.greeting_template.format(user_input=reformulated_question, current_hour=current_hour)
             answer = llm_haiku.invoke(prompt_message)
             chatbot_response = answer.content
             logger.info("Chatbot response (greeting): %s", chatbot_response)
@@ -59,10 +70,10 @@ def get_qa(user_input: str, conversation: list):
             }
         
         elif intention.Personalized_query:
-            nombre_pala, atributo = process_query(query=reformulated_question)
+            nombre_pala, atributos = process_query(query=reformulated_question)
 
-            if nombre_pala and atributo:
-                resultado_faiss = consult_faiss("C:/Users/alvar/TFG/PADELMASTER BACKEND/faiss/faiss_index", nombre_pala, atributo)
+            if nombre_pala and atributos:
+                resultado_faiss = consult_faiss("C:/Users/alvar/TFG/PADELMASTER BACKEND/faiss/faiss_index", nombre_pala, atributos)
 
                 if resultado_faiss["similares"]:
                     chatbot_response = reformular_respuesta_sin_resultados(nombre_pala)
@@ -74,9 +85,10 @@ def get_qa(user_input: str, conversation: list):
                         "similares": True,
                     }
                 elif resultado_faiss["exacto"]:
-                    valor_atributo = resultado_faiss["exacto"]["atributo"]
+                    valores_atributos = resultado_faiss["exacto"]["atributos"]
                     imagen_url = resultado_faiss["exacto"]["imagen"]
-                    chatbot_response = reformular_respuesta(valor_atributo, nombre_pala, atributo)
+                    chatbot_response = reformular_respuesta(valores_atributos, nombre_pala, atributos, cleaned_conversation)
+                    
                     return {
                         "type": "Personalized_query",
                         "answer": chatbot_response,
@@ -95,7 +107,7 @@ def get_qa(user_input: str, conversation: list):
 
                 
         elif intention.Recommendation:
-            prompt_message = pro.recomendation.format(message=reformulated_question)
+            prompt_message = pro.recomendation.format(message=reformulated_question, conversation=cleaned_conversation)
             answer = llm_haiku.invoke(prompt_message)
             chatbot_response = answer.content
             logger.info("Chatbot response (recommendation): %s", chatbot_response)
@@ -105,7 +117,7 @@ def get_qa(user_input: str, conversation: list):
             }
         
         elif intention.Personalized_recommendation:
-            prompt_personalized_recommendation = pro.recomendacion_personalizada_template.format(user_input=reformulated_question)
+            prompt_personalized_recommendation = pro.recomendacion_personalizada_template.format(user_input=reformulated_question, conversation=cleaned_conversation)
             answer = llm_haiku.invoke(prompt_personalized_recommendation)
             logger.info("Answer reformulated: %s", answer.content)
 
@@ -142,22 +154,12 @@ def get_qa(user_input: str, conversation: list):
                 "answer": chatbot_response,
                 "recommendations": recommendations,
             }
-        
-        elif intention.Other:
-            prompt_message = pro.other_intention_template.format(user_input=reformulated_question, conversation=cleaned_conversation)
-            answer = llm_haiku.invoke(prompt_message)
-            chatbot_response = answer.content
-            logger.info("Chatbot response (other): %s", chatbot_response)
-            return {
-                "type": "Other",
-                "answer": chatbot_response
-            }
 
         else:
             prompt_message = pro.other_intention_template.format(user_input=reformulated_question, conversation=cleaned_conversation)
             answer = llm_haiku.invoke(prompt_message)
             chatbot_response = answer.content
-            logger.info("Chatbot response (other): %s", chatbot_response)
+            logger.info("Chatbot response (Other): %s", chatbot_response)
             return {
                 "type": "Other",
                 "answer": chatbot_response
@@ -448,7 +450,7 @@ def apply_filters(filtros: FilterModel):
             "Descripción": pala["Descripción"]
         })
     
-    recommendations = recommendations[:5]
+    recommendations = recommendations[:3]
 
     context = format_recommendations(recommendations)
     llm_haiku = ChatBedrock(model_id=LLM_CLAUDE_3_HAIKU, client=claude_3_haiku_client)
