@@ -6,6 +6,7 @@ from langchain.schema import Document
 from langchain.vectorstores import FAISS
 import pandas as pd
 import os
+from config.config import *
 
 def generar_guardar_indice_faiss(archivoJSON, rutaIndice):
     logger.info(f"Inizializing the generation of the FAISS index from the dataset '{archivoJSON}'.")
@@ -50,8 +51,8 @@ def generar_guardar_indice_faiss(archivoJSON, rutaIndice):
         logger.error(f"Error saving the index to '{rutaIndice}': {e}")
 
 # Ruta al dataset y ubicación para guardar el índice
-archivoJSON = "C:/Users/alvar/TFG/PADELMASTER BACKEND/dataset_padel_nuestro/palas_padelnuestro_actualizado/palas_padelnuestro_actualizado.json"
-rutaIndice = "C:/Users/alvar/TFG/PADELMASTER BACKEND/faiss/faiss_index"
+archivoJSON = DATASET_PATH
+rutaIndice = INDEX_PATH
 
 # Generar y guardar el índice FAISS
 generar_guardar_indice_faiss(archivoJSON, rutaIndice)

@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 import json
+import random
 from typing import Optional
 from langchain_aws import ChatBedrock
 from datetime import datetime
@@ -22,8 +23,6 @@ def get_qa(user_input: str, conversation: list):
         Respuesta en formato JSON.
     """   
     try:
-        #logger.info("User input received: %s", user_input)
-
         conversation_window = conversation[-5:]
         cleaned_conversation = [ #! Comprobar bien esto
             {
@@ -73,7 +72,7 @@ def get_qa(user_input: str, conversation: list):
             nombre_pala, atributos = process_query(query=reformulated_question)
 
             if nombre_pala and atributos:
-                resultado_faiss = consult_faiss("C:/Users/alvar/TFG/PADELMASTER BACKEND/faiss/faiss_index", nombre_pala, atributos)
+                resultado_faiss = consult_faiss(FAISS_INDEX_PATH, nombre_pala, atributos)
 
                 if resultado_faiss["similares"]:
                     chatbot_response = reformular_respuesta_sin_resultados(nombre_pala)
@@ -449,6 +448,8 @@ def apply_filters(filtros: FilterModel):
             "Enlace": pala["Enlace"],
             "Descripción": pala["Descripción"]
         })
+
+    random.shuffle(recommendations)
     
     recommendations = recommendations[:3]
 

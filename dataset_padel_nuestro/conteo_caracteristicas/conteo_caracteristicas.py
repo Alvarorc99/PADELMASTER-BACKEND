@@ -1,8 +1,9 @@
 """File to analyze the dataset and extract the number of unique values for each characteristic"""
 
 import pandas as pd
+from src.config.config import *
 
-file_path = "C:/Users/alvar/TFG/PADELMASTER BACKEND/dataset_padel_nuestro/palas_padelnuestro_actualizado/palas_padelnuestro_actualizado.json"
+file_path = DATASET_PATH
 df = pd.read_json(file_path)
 
 caracteristicas_a_contar = [

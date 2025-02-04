@@ -71,6 +71,6 @@ def reformular_respuesta(respuesta_faiss, nombre_pala, atributo):
 consulta = "Que precio tiene la pala BABOLAT TECHNICAL VIPER 2023?"
 nombre_pala, atributo = procesar_consulta(consulta)
 if nombre_pala and atributo:
-    resultado_faiss = consultar_faiss("C:/Users/alvar/TFG/PADELMASTER BACKEND/faiss/faiss_index", nombre_pala, atributo)
+    resultado_faiss = consultar_faiss(FAISS_INDEX_PATH, nombre_pala, atributo)
     respuesta_final = reformular_respuesta(resultado_faiss, nombre_pala, atributo)
     print(respuesta_final)

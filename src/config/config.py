@@ -24,6 +24,11 @@ claude_3_haiku_client = boto3.client(
 )
 
 DATASET_PATH = os.getenv("DATASET_PATH")
+FAISS_INDEX_PATH = os.getenv("FAISS_INDEX_PATH")
+DATASET_SCRAPING_PATH = os.getenv("DATASET_SCRAPING_PATH")
+INDEX_PATH = os.getenv("INDEX_PATH")
+DATASET_CSV_PATH = os.getenv("DATASET_CSV_PATH")
+DATASET_XLSX_PATH = os.getenv("DATSET_XLSX_PATH")
 
 logging.basicConfig(
     level=logging.INFO,

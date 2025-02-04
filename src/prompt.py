@@ -5,7 +5,7 @@ from langchain_core.prompts import PromptTemplate
 prompt_template = PromptTemplate(
     input_variables=["user_input", "conversation"],
     template="""
-    Eres un experto en pádel y en palas de pádel. Tu tarea es proporcionar información precisa y detallada sobre las características de las palas. Responde de forma clara y sencilla a cualquier consulta sobre marca, sexo, forma, balance, dureza, acabado, superficie, tipo de juego, nivel de juego o jugador profesional.
+    Eres un experto en pádel y en palas de pádel. Tu tarea es proporcionar información precisa y detallada sobre las características de las palas. Responde directamente al usuario de forma clara y sencilla a cualquier consulta sobre marca, sexo, forma, balance, dureza, acabado, superficie, tipo de juego, nivel de juego o jugador profesional.
     La consulta del usuario es la siguiente: {user_input}
     Te proporciono un historial de conversación con el usuario por si es necesario: {conversation}
 
@@ -233,7 +233,7 @@ prompt_template = PromptTemplate(
             LOK MAXX HYPE 2024  
     ---
 
-    Responde directamente al usuario con claridad y proporciona una explicación detallada si es necesario, combinando lo que sabes y estos ejemplos. 
+Responde directamente al usuario con claridad y proporciona una explicación detallada si es necesario, combinando lo que sabes y estos datos. No saludes al usuario si él no te ha saludado.
 """
 )
 
@@ -243,13 +243,17 @@ conversation_template = PromptTemplate( #! Mejorar
 El usuario ha realizado la siguiente consulta: "{user_input}".
 Este es el historial de la conversación con las últimas interacciones con el usuario: "{conversation}".
 
-Reformula la pregunta para que tenga en cuenta el contexto anterior.
-Si el usuario ha mencionado por ejemplo, su nivel de juego, el balance que desea, la dureza que quiere, o cualquier otra caracteristica relevante, añade esa información en la reformulación. Los atributos posibles son "balance", "nivel de juego", "marca", "color", "tipo de juego", "dureza", "acabado", "superficie", "precio", "núcleo", "cara", "forma", "sexo" (hombre, mujer o junior"), y "jugador preferido".
-Si la consulta no tiene relación con el contexto anterior, responde con la misma pregunta original. Evita respuestas que den la sensación de que el modelo no recuerda la conversación previa.
+Reformula la pregunta del usuario teniendo en cuenta el contexto de la conversación anterior. Si el usuario ha proporcionado detalles como su nivel de juego, balance deseado, dureza preferida, o cualquier otra característica relevante, incluye esa información en la reformulación.
 
-Por favor, devuelve únicamente la pregunta reformulada o la original sin ninguna otra información adicional.
+Los atributos posibles a tener en cuenta son: "balance", "nivel de juego", "marca", "color", "tipo de juego", "dureza", "acabado", "superficie", "precio", "núcleo", "cara", "forma", "sexo" (hombre, mujer, junior), "jugador profesional preferido".
 
-Ejemplo de conversación 1:
+Si la consulta no tiene relación con el contexto anterior, simplemente responde con la pregunta original. Evita crear respuestas que sugieran que el modelo no recuerda el contexto previo.
+
+Por favor, devuelve únicamente la pregunta reformulada o la original, sin ninguna otra información adicional.
+
+Ejemplos de conversación:
+
+Ejemplo 1:
     Entrada: "Hola, soy un jugador nivel principiante"
     Respuesta: "Hola, soy un jugador nivel principiante"
     Entrada: "¿Qué tipo de dureza es mejor para mí?"
@@ -257,7 +261,7 @@ Ejemplo de conversación 1:
     Entrada: "¿Qué palas me recomiendas?"
     Respuesta: "¿Qué palas me recomiendas para un nivel principiante?"
     
-Ejemplo de conversación 2:
+Ejemplo 2:
     Entrada: "¿Cuál es el balance de la pala SIUX GENESIS POWER 12K?"
     Respuesta: "¿Cuál es el balance de la pala SIUX GENESIS POWER 12K?"
     Entrada: "¿Y su precio?"
@@ -267,45 +271,23 @@ Ejemplo de conversación 2:
     Entrada: "¿Y qué dureza?"
     Respuesta: "¿Qué dureza me recomiendas para un nivel intermedio?"
 
-Ejemplo de conversación 3:
-    Entrada: "Buenos días"
-    Respuesta: "Buenos días"
+Ejemplo 3:
     Entrada: "Soy un jugador nivel principiante"
     Respuesta: "Soy un jugador nivel principiante"
     Entrada: "¿Qué balance me recomiendas?"
     Respuesta: "¿Qué balance me recomiendas para un nivel principiante?"
     Entrada: "¿Qué pala me recomiendas?"
     Respuesta: "¿Qué pala me recomiendas para un jugador con nivel principiante?"
+
+Ejemplo 4:
     Entrada: "¿Cuánto cuesta la pala BABOLAT TECHNICAL?"
     Respuesta: "¿Cuánto cuesta la pala BABOLAT TECHNICAL?"
     Entrada: "Me refería a la BABOLAT TECHNICAL VIPER 2023"
     Respuesta: "¿Cuánto cuesta la BABOLAT TECHNICAL VIPER 2023?"
     Entrada: "Y cuál es su balance?"
     Respuesta: "¿Cuál es el balance de la BABOLAT TECHNICAL VIPER 2023?"
-
-Ejemplo de conversación 3:
-    Entrada: "Juego mucho al pádel"
-    Respuesta: "Juego mucho al pádel"
-    Entrada: "Soy un jugador ofensivo"
-    Respuesta: "Soy un jugador nivel avanzado con un juego ofensivo"
-    Entrada: "Me quiero gastar entre 100 y 200 euros"
-    Respuesta: "Soy un jugador nivel avanzado con un juego ofensivo y me quiero gastar entre 100 y 200 euros"
-    Entrada: "¿Qué palas me recomiendas?"
-    Respuesta: "¿Qué palas me recomiendas para un jugador ofensivo, nivel avanzado y que quiera gastar entre 100 y 200 euros?"
-    Entrada: "¿Que beneficios tiene un balance alto?"
-    Respuesta: "¿Que beneficios tiene un balance alto?"
-
-Ejemplo de conversación 4:
-    Entrada: "Hola, que tal?"
-    Respuesta: "Hola, que tal?"
-    Entrada: "¿Que dureza recomiendas para un nivel profesional?"
-    Respuesta: "¿Que dureza recomiendas para un nivel profesional?"
-    Entrada: "Por favor, recomiéndame palas"
-    Respuesta: "Por favor, recomiéndame palas para nivel profesional"
-    Entrada: "¿Y balance?"
-    Respuesta: "¿Que balance recomiendas para nivel profesional?"
-    Entrada: "¿Qué tipo de superficie es mejor para mí?"
-    Respuesta: "¿Qué tipo de superficie es mejor para un nivel profesional?"
+    Entrada: "Ne gustaría saber también su color y su núcleo"
+    Respuesta: "¿Cuál es el color y el núcleo de la BABOLAT TECHNICAL VIPER 2023?"
 """
 )
 
@@ -315,17 +297,18 @@ intention_template = PromptTemplate(
 El usuario ha introducido la siguiente entrada: "{user_input}".
 
 Tu tarea es identificar la intención de esta entrada y clasificarla en una de las siguientes categorías:
-1. 'Greeting': Si el usuario está saludando o iniciando una conversación (ejemplos: "Hola", "Buenos días", etc.).
-2. 'Technical_query': Si el usuario pregunta sobre características generales de las palas de pádel o conceptos técnicos relacionados. Las características disponibles son "Marca", "Sexo", "Forma", "Balance", "Dureza", "Acabado", "Superficie", "Núcleo", "Cara", "Tipo de juego", "Nivel de juego", "Jugador profesional", "Precio", "Imagen" y "Descripción". Por ejemplo, "¿Qué significa que una pala tenga forma de lágrima?", "¿Cuál es la diferencia entre un balance bajo y uno alto?", "¿Que balance me recomiendas para un nivel principiante?", etc.).
-3. 'Personalized_query': Si el usuario pregunta sobre una pala específica mencionando su nombre. Por ejemplo, "¿Qué tipo de núcleo y cara tiene la adidas metalbone hrd+ 2024?", "¿Qué precio tiene la BULLPADEL HACK 03 24?", "¿Qué dureza tiene la SIUX GENESIS POWER 12K? ¿Y su balance?".
-4. 'Recommendation': Si el usuario pide una recomendación general de palas sin especificar preferencias ni características. Por ejemplo "Quiero una pala recomendada", "Recomiéndame una pala", o "¿Que pala me recomiendas?", etc.
-5. 'Personalized_recommendation':Si el usuario solicita una recomendación y menciona características o preferencias. Por ejemplo "Me gustaría una pala con un balance alto", "¿Que palas me recomiendas para un nivel principiante?", "Quiero una pala de la marca Bullpadel", etc.
-6. 'Other': Si la entrada no es un saludo y no corresponde con una consulta relacionada con el pádel.
+
+1. "Greeting": Si el usuario está saludando o iniciando una conversación. Ejemplos: "Hola", "Buenos días", etc.
+2. "Technical_query": Si el usuario pregunta sobre características generales de las palas de pádel o conceptos técnicos relacionados con estas características. Las características disponibles son "Marca", "Sexo", "Forma", "Balance", "Dureza", "Acabado", "Superficie", "Núcleo", "Cara", "Tipo de juego", "Nivel de juego", "Jugador profesional", "Precio", "Imagen" y "Descripción". Ejemplos: "¿Qué significa que una pala tenga forma de lágrima?", "¿Cuál es la diferencia entre un balance bajo y uno alto?", "¿Que balance me recomiendas para un nivel principiante?", etc.).
+3. "Personalized_query": Si el usuario pregunta sobre una pala específica, mencionando su nombre o modelo exacto. Ejemplos: "¿Qué tipo de núcleo y cara tiene la adidas metalbone hrd+ 2024?", "¿Qué precio tiene la BULLPADEL HACK 03 24?", "¿Qué dureza tiene la SIUX GENESIS POWER 12K?, etc.
+4. "Recommendation": Si el usuario pide una recomendación general de palas sin especificar preferencias ni características. Ejemplos: "Quiero una pala recomendada", "Recomiéndame una pala", o "¿Que pala me recomiendas?", etc.
+5. "Personalized_recommendation": Si el usuario solicita una recomendación y menciona características específicas o preferencias, como nivel de juego, tipo de juego, balance, dureza, precios, marca, etc. Ejemplos: "Me gustaría una pala con un balance alto", "¿Que palas me recomiendas para un nivel principiante?", "Quiero una pala de la marca Bullpadel", etc.
+6. "Other": Si la entrada no tiene relación con el pádel ni es un saludo o una consulta personalizada. Ejemplos: "¿Qué tiempo hará mañana?", "¿Puedo hacerte una consulta?", "¿Puedes darme un consejo sobre la forma de jugar?", etc.
 
 Ejemplos:
 1.  Entrada: "Hola, ¿que tal?"
     Respuesta: "Greeting"
-2.  Entrada: "Buenos días"
+2. Entrada: "Buenas, puedo hacerte una consulta?"
     Respuesta: "Greeting"
 3.  Entrada: "¿Que significa que una pala tenga forma de lágrima?"
     Respuesta: "Technical_query"
@@ -335,36 +318,34 @@ Ejemplos:
     Respuesta: "Technical_query"
 6.  Entrada: "Cuál es la diferencia entre la superficie y el acabado?"
     Respuesta: "Technical_query"
-7.  Entrada: "¿Qué balance tiene la adidas metalbone hrd+ 2024?" 
+7.  Entrada: "¿Qué pala utiliza Agustin Tapia?"
+    Respuesta: "Technical_query"
+8.  Entrada: "Soy un jugador avanzado que tiene un juego ofensivo, ¿que balance me recomiendas?"
+    Respuesta: "Technical_query"
+9.  Entrada: "¿Qué balance tiene la Adidas Metalbone hrd+ 2024?" 
     Respuesta: "Personalized_query"
-8.  Entrada: "¿Podrías mandarme el enlace a la SIUX TRILOGY CONTROL SPECIAL EDITION?"
+10.  Entrada: "¿Podrías mandarme el enlace a la SIUX TRILOGY CONTROL SPECIAL EDITION?"
     Respuesta: "Personalized_query"
-9. Entrada: "¿Cuánto cuesta la BULLPADEL HACK 03 24?" 
+11. Entrada: "¿Cuánto cuesta la BULLPADEL HACK 03 24?" 
     Respuesta: "Personalized_query"
-10. Entrada: "¿Puedes mostrarme como es la SIUX GENESIS POWER 12K?"
+12. Entrada: "¿Puedes mostrarme como es la SIUX GENESIS POWER 12K?"
     Respuesta: "Personalized_query"
-11. Entrada: "¿Qué pala me recomendarías para empezar?"
+13. Entrada: "¿Qué pala me recomendarías para empezar?"
     Respuesta: "Recommendation"
-12. Entrada: "¿Que tipo de pala me recomiendas?"
+14. Entrada: "¿Que tipo de pala me recomiendas?"
     Respuesta: "Recommendation"
-13. Entrada: "Recomiéndame una pala para principiantes"
+15. Entrada: "Recomiéndame una pala para principiantes"
     Respuesta: "Personalized_recommendation"
-14. Entrada: "Soy un jugador avanzado que busca control y potencia. ¿Qué pala me recomiendas?"
+16. Entrada: "Soy un jugador avanzado que busca control y potencia. ¿Qué pala me recomiendas?"
     Respuesta: "Personalized_recommendation"
-15. Entrada: "Hola, me gustaría una pala con forma de diamante, balance alto y dureza intermedia. ¿Qué opciones tengo?"
+17. Entrada: "Hola, me gustaría una pala con forma de diamante, balance alto y dureza intermedia. ¿Qué opciones tengo?"
     Respuesta: "Personalized_recommendation"
-16. Entrada: "¿Que tiempo hará mañana?"
+18. Entrada: "¿Que tiempo hará mañana?"
     Respuesta: 'Other'
-17. Entrada: "¿Puedo hacerte una consulta?"
+20. Entrada: "¿Puedes darme un consejo sobre la forma de jugar?"
     Respuesta: "Other"
-18. Entrada: "¿Puedes darme un consejo sobre la forma de jugar?"
-    Respuesta: "Other"
-19. Entrada: "¿Qué pala utiliza Agustin Tapia?"
-    Respuesta: "Technical_query"
-20. Entrada: "Soy un jugador avanzado que tiene un juego ofensivo, ¿que balance me recomiendas?"
-    Respuesta: "Technical_query"
 
-Devuelve solamente una palabra: "Greeting", "Technical_query", "Personalized_query", "Recommendation", "Personalized_recommendation" o "Other".
+**Devuelve solamente una palabra:** "Greeting", "Technical_query", "Personalized_query", "Recommendation", "Personalized_recommendation" o "Other".
 """
 )
 
@@ -443,7 +424,7 @@ Las características disponibles son las siguientes:
 - **Tipo de juego**: 'Control, Potencia', 'Control', 'Potencia', 'Polivalente'.
 - **Jugador profesional**: 'Agustín Tapia', 'Miguel Lamperti', 'Alejandro Galán', 'Paquito Navarro', 'Juan Lebrón', 'Gemma Triay', 'Lucas Campagnolo', 'Franco Stupa', 'Marta Ortega', 'Sanyo Gutiérrez', 'Alejandra Salazar', 'Defi Brea Senesi', 'Fernando Belasteguín', 'Marta Marrero Marrero', 'Mª Pilar Sánchez Alayeto', 'Beatriz González', 'Juan Tello', 'Martin Di Nenno', 'Federico Chingotto', 'Ari Sánchez', 'Pablo Lima', 'Arturo Coello', 'Alejandro Ruiz Granados', 'Agustín Tapia', 'Miguel Lamperti', 'Paula Josmaria Martín', 'Patty Llaguno', 'Patty Llaguno', 'Miguel Yanguas Díez', 'Mª Jose Sánchez Alayeto', 'Seba Nerone', 'Aranzazu Osoro Ulrich'.
 
-Recuerda que debes ser amigable y cercano al usuario. 
+Recuerda que debes ser amigable y cercano al usuario. No saludes al usuario, a no ser que lo haga en la propia consulta.
 """
 )
 

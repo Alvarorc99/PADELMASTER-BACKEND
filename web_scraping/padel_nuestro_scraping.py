@@ -4,6 +4,7 @@ from venv import logger
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
+from src.config.config import *
 
 
 marca = []
@@ -169,5 +170,5 @@ df = pd.DataFrame({
     'Descripción': descripcion,
 })
 
-df.to_excel('C:/Users/alvar/TFG/PADELMASTER BACKEND/dataset_padel_nuestro/palas_padelnuestro_actualizado.xlsx', index=False)
+df.to_excel(DATASET_SCRAPING_PATH, index=False)
 logger.info("Datos de las palas guardados exitosamente en 'palas_padelnuestro_actualizado.xlsx'.")
