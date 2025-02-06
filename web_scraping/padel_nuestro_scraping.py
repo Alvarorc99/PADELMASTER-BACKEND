@@ -28,7 +28,6 @@ imagen = []
 
 total_paginas = 40
 
-# Iterar a través de cada página
 for page_number in range(1, total_paginas + 1):
     logger.info(f"Procesando página {page_number}/{total_paginas}...")
     url = f"https://www.padelnuestro.com/palas-padel?_gl=1%2A1jxvsfi%2A_up%2AMQ..%2A_gs%2AMQ..&p={page_number}"
@@ -38,7 +37,6 @@ for page_number in range(1, total_paginas + 1):
     # Encontrar todos los enlaces que contienen información de las palas
     palas = soup.find_all('a', class_='product-label label-bottom')
 
-    # Comprobar si se encontraron palas
     if not palas:
         logger.warning(f"No se encontraron palas en la página {page_number}.")
         continue
@@ -64,7 +62,7 @@ def obtener_caracteristicas_pala(enlace):
 
     container = soup.find_all('div', class_='description-attributes')
 
-    # Inicializar los valores con valores predeterminados (vacío o None)
+    # Inicializar los valores (vacío)
     current_marca = current_color = current_balance = current_nucleo = current_caras = ""
     current_nivel_juego = current_acabado = current_forma = current_superficie = current_dureza = ""
     current_tipo_juego = current_jugador = current_coleccion_jugador = ""
@@ -143,7 +141,7 @@ def obtener_caracteristicas_pala(enlace):
     dureza.append(current_dureza)
     imagen.append(current_imagen_url)
 
-    time.sleep(1)  # Esperar 1 segundo entre solicitudes para evitar sobrecargar el servidor
+    time.sleep(1)
     logger.info(f"Pala {nombre_pala} procesada con éxito.\n")
 
 for enlace in enlaces:

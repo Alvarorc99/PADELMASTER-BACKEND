@@ -24,7 +24,7 @@ def get_qa(user_input: str, conversation: list):
     """   
     try:
         conversation_window = conversation[-5:]
-        cleaned_conversation = [ #! Comprobar bien esto
+        cleaned_conversation = [
             {
                 'usuario': item['user_input'], 
                 'respuesta': item['answer'], 
@@ -32,8 +32,6 @@ def get_qa(user_input: str, conversation: list):
             } 
                 for item in conversation_window
         ]
-        print("##################################")
-        print("Conversation cleaned context: ", cleaned_conversation)
         logger.debug("Cleaned conversation context: %s", cleaned_conversation)
 
         llm_haiku = ChatBedrock(model_id=LLM_CLAUDE_3_HAIKU, client=claude_3_haiku_client)
@@ -122,11 +120,11 @@ def get_qa(user_input: str, conversation: list):
 
             message_data = json.loads(answer.content)
 
-            # Validar y convertir 'Precio' si es necesario
+            # Validar y convertir "Precio" si es necesario
             if "Precio" in message_data and isinstance(message_data["Precio"], list) and len(message_data["Precio"]) == 2:
                 message_data["Precio"] = tuple(message_data["Precio"])  
             elif "Precio" in message_data and not isinstance(message_data["Precio"], (tuple, list)):
-                print("Error: El campo 'Precio' tiene un formato incorrecto:", message_data["Precio"])
+                logger.error("Error: El campo 'Precio' tiene un formato incorrecto:", message_data["Precio"])
                 message_data["Precio"] = None 
             
             filters = FilterModel(
@@ -204,7 +202,6 @@ def format_recommendations(recommendations):
     
     return mensaje
 
-
 @dataclass
 class FilterModel:
     Marca: Optional[str] = None
@@ -234,7 +231,7 @@ def apply_filters(filtros: FilterModel):
         precio_min = filtros.get('Precio_min', None)
         precio_max = filtros.get('Precio_max', None)
 
-        # Filtras por precio
+        # Filtras por Precio
         if precio_min is not None and precio_float < precio_min:
             continue
         if precio_max is not None and precio_float > precio_max:
@@ -380,7 +377,7 @@ def apply_filters(filtros: FilterModel):
                 x in pala_nivel_juego for x in ["avanzado / competición, principiante / intermedio", "principiante / intermedio", "avanzado / competición", "avanzado / competición, profesional"]):
                 continue
         
-        # Filtrar por núcleo
+        # Filtrar por Núcleo
         if filtros.get('Núcleo'):
             nucleo_selected = filtros['Núcleo'].lower()
             pala_nucleo = pala.get('Núcleo', '').lower()
@@ -390,7 +387,7 @@ def apply_filters(filtros: FilterModel):
             if nucleo_selected != pala_nucleo:
                 continue
 
-        # Filtrar por cara
+        # Filtrar por Cara
         if filtros.get('Cara'):
             cara_selected = filtros['Cara'].lower()
             pala_cara = pala.get('Cara', '').lower()
@@ -413,16 +410,6 @@ def apply_filters(filtros: FilterModel):
         # Filtro Marca
         if filtros.get('Marca') and filtros['Marca'] and filtros['Marca'].lower() not in pala['Marca'].lower():
             continue
-
-        # Filtro Forma
-        if filtros.get('Forma'): 
-            forma_selected = filtros['Forma'].lower()
-            
-            if 'Sin dato' in pala.get('Forma', '').lower():
-                continue
-
-            if forma_selected and forma_selected != pala.get('Forma', '').lower():
-                continue
 
         # Filtro Jugador profesional
         if filtros.get('Jugador_profesional') and filtros['Jugador_profesional'] and filtros['Jugador_profesional'].lower() != pala.get('Jugador profesional', '').lower():
@@ -461,7 +448,7 @@ def apply_filters(filtros: FilterModel):
         respuesta = llm_haiku.invoke(prompt_recommendations)
     
     except Exception as e:
-        print("Error al generar recomendaciones:", e)
+        logger.error("Error al generar recomendaciones:", e)
         respuesta = None
     
     return respuesta.content, recommendations

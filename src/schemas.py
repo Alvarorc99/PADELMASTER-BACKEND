@@ -1,4 +1,4 @@
-"""File to define the schemes"""
+"""File to define the schemas"""
 
 from pydantic import BaseModel, Field
 

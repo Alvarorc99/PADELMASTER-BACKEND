@@ -291,7 +291,7 @@ Ejemplo 4:
 """
 )
 
-intention_template = PromptTemplate(
+intention_template = PromptTemplate( #! Mejorar
     input_variables=["user_input"],
     template="""
 El usuario ha introducido la siguiente entrada: "{user_input}".
@@ -455,7 +455,7 @@ Por favor, devuelve exclusivamente un **JSON** con todas las caracteristicas men
 """
 )
 
-other_intention_template = PromptTemplate(
+other_intention_template = PromptTemplate( #! Mejorar junto con el contexto
     input_variables=["user_input", "conversation"],
     template="""
 Eres un asistente virtual experto en pádel llamado PADELMASTER encargado de proporcionar información sobre características de palas y recomendar palas de pádel según los gustos, preferencias y características del usuario.

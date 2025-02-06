@@ -10,12 +10,9 @@ from src.config.config import *
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
 
-
 def procesar_consulta(consulta):
-    # Crear el modelo de lenguaje
     llm = ChatBedrock(model_id=LLM_CLAUDE_3_HAIKU, client=claude_3_haiku_client)
 
-    # Plantilla de prompt para extraer el nombre de la pala y el atributo
     prompt = """
     Dada la siguiente consulta: "{consulta}", 
     por favor, extrae el nombre de la pala y el atributo que se está preguntando. 
@@ -27,7 +24,6 @@ def procesar_consulta(consulta):
     
     response = llm.invoke(formatted_prompt)
     
-    # Parsear la respuesta para obtener el nombre de la pala y el atributo
     try:
         resultado = response.content
         datos = json.loads(resultado)
