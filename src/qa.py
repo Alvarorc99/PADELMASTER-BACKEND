@@ -23,8 +23,6 @@ def get_qa(user_input: str, conversation: list):
         Respuesta en formato JSON.
     """   
     try:
-        #logger.info("Longitud de conversation: %d", len(conversation))
-        #logger.info("Tipo de conversation: %s, Contenido: %s", type(conversation), conversation)
 
         cleaned_conversation = [
             f'Usuario: {item["user_input"]}\nChatbot: {item["answer"]}' 
