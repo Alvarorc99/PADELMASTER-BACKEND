@@ -15,7 +15,9 @@ class UserQuery(BaseModel):
 @app.post("/query")
 async def ask_chatbot(request: UserQuery):
     try:
+        logger.info("Full request received: %s", request)
         logger.info(f"Query received: {request.user_query}")
+        logger.info("Conversation: %s", request.conversation)
         response = get_qa(request.user_query, request.conversation)
         if response.get("answer"):
             return response

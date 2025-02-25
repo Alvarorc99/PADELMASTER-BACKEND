@@ -237,61 +237,23 @@ Responde directamente al usuario con claridad y proporciona una explicación det
 """
 )
 
-conversation_template = PromptTemplate( #! Mejorar
+conversation_template = PromptTemplate(
     input_variables=["user_input", "conversation"],
-    template=""" 
-El usuario ha realizado la siguiente consulta: "{user_input}".
-Este es el historial de la conversación con las últimas interacciones con el usuario: "{conversation}".
+    template="""Eres un asistente virtual especializado en pádel. 
+Tu tarea es reformular la consulta del usuario de manera clara y autónoma, teniendo en cuenta el historial de la conversación. 
+Si la pregunta del usuario es ambigua o hace referencia a algo previo, intégralo en la reformulación.
 
-Reformula la pregunta del usuario teniendo en cuenta el contexto de la conversación anterior. Si el usuario ha proporcionado detalles como su nivel de juego, balance deseado, dureza preferida, o cualquier otra característica relevante, incluye esa información en la reformulación.
+### Historial actual:
+{conversation}
 
-Los atributos posibles a tener en cuenta son: "balance", "nivel de juego", "marca", "color", "tipo de juego", "dureza", "acabado", "superficie", "precio", "núcleo", "cara", "forma", "sexo" (hombre, mujer, junior), "jugador profesional preferido".
+Usuario: {user_input}
 
-Si la consulta no tiene relación con el contexto anterior, simplemente responde con la pregunta original. Evita crear respuestas que sugieran que el modelo no recuerda el contexto previo.
-
-Por favor, devuelve únicamente la pregunta reformulada o la original, sin ninguna otra información adicional.
-
-Ejemplos de conversación:
-
-Ejemplo 1:
-    Entrada: "Hola, soy un jugador nivel principiante"
-    Respuesta: "Hola, soy un jugador nivel principiante"
-    Entrada: "¿Qué tipo de dureza es mejor para mí?"
-    Respuesta: "¿Qué dureza me recomiendas para un nivel principiante?"
-    Entrada: "¿Qué palas me recomiendas?"
-    Respuesta: "¿Qué palas me recomiendas para un nivel principiante?"
-    
-Ejemplo 2:
-    Entrada: "¿Cuál es el balance de la pala SIUX GENESIS POWER 12K?"
-    Respuesta: "¿Cuál es el balance de la pala SIUX GENESIS POWER 12K?"
-    Entrada: "¿Y su precio?"
-    Respuesta: "¿Cuál es el precio de la pala SIUX GENESIS POWER 12K?" 
-    Entrada: "Que pala recomiendas para un jugador de nivel intermedio, que busque un control, potencia y balance bajo?"
-    Respuesta: "¿Que pala recomiendas para un jugador de nivel intermedio, que busque un control, potencia y balance bajo?"
-    Entrada: "¿Y qué dureza?"
-    Respuesta: "¿Qué dureza me recomiendas para un nivel intermedio?"
-
-Ejemplo 3:
-    Entrada: "Soy un jugador nivel principiante"
-    Respuesta: "Soy un jugador nivel principiante"
-    Entrada: "¿Qué balance me recomiendas?"
-    Respuesta: "¿Qué balance me recomiendas para un nivel principiante?"
-    Entrada: "¿Qué pala me recomiendas?"
-    Respuesta: "¿Qué pala me recomiendas para un jugador con nivel principiante?"
-
-Ejemplo 4:
-    Entrada: "¿Cuánto cuesta la pala BABOLAT TECHNICAL?"
-    Respuesta: "¿Cuánto cuesta la pala BABOLAT TECHNICAL?"
-    Entrada: "Me refería a la BABOLAT TECHNICAL VIPER 2023"
-    Respuesta: "¿Cuánto cuesta la BABOLAT TECHNICAL VIPER 2023?"
-    Entrada: "Y cuál es su balance?"
-    Respuesta: "¿Cuál es el balance de la BABOLAT TECHNICAL VIPER 2023?"
-    Entrada: "Ne gustaría saber también su color y su núcleo"
-    Respuesta: "¿Cuál es el color y el núcleo de la BABOLAT TECHNICAL VIPER 2023?"
-"""
+Reformula la pregunta del usuario de manera clara y autónoma.
+**Pregunta reformulada:**"""
 )
 
-intention_template = PromptTemplate( #! Mejorar
+
+intention_template = PromptTemplate(
     input_variables=["user_input"],
     template="""
 El usuario ha introducido la siguiente entrada: "{user_input}".

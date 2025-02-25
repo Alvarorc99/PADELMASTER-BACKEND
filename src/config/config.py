@@ -5,6 +5,7 @@ import boto3
 from dotenv import load_dotenv
 import os
 from pathlib import Path
+import sys
 
 dotenv_path = Path(__file__).resolve().parent.parent.parent / '.env'
 load_dotenv(dotenv_path)
@@ -33,7 +34,8 @@ DATASET_XLSX_PATH = os.getenv("DATSET_XLSX_PATH")
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    datefmt='%Y-%m-%d %H:%M:%S',
+    stream=sys.stdout,
 )
 
 logger = logging.getLogger("PADELMASTER")

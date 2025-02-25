@@ -23,16 +23,15 @@ def get_qa(user_input: str, conversation: list):
         Respuesta en formato JSON.
     """   
     try:
-        conversation_window = conversation[-5:]
+        #logger.info("Longitud de conversation: %d", len(conversation))
+        #logger.info("Tipo de conversation: %s, Contenido: %s", type(conversation), conversation)
+
         cleaned_conversation = [
-            {
-                'usuario': item['user_input'], 
-                'respuesta': item['answer'], 
-                'tipo': item['type']
-            } 
-                for item in conversation_window
+            f'Usuario: {item["user_input"]}\nChatbot: {item["answer"]}' 
+            for item in conversation[-5:]
         ]
-        logger.debug("Cleaned conversation context: %s", cleaned_conversation)
+
+        logger.info("Conversation cleaned: %s", cleaned_conversation)
 
         llm_haiku = ChatBedrock(model_id=LLM_CLAUDE_3_HAIKU, client=claude_3_haiku_client)
 
