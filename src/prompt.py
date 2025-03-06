@@ -241,7 +241,7 @@ conversation_template = PromptTemplate(
     input_variables=["user_input", "conversation"],
     template="""Eres un asistente virtual especializado en pádel. 
 Tu tarea es reformular la consulta del usuario de manera clara y autónoma, teniendo en cuenta el historial de la conversación. 
-Si la pregunta del usuario es ambigua o hace referencia a algo previo, intégralo en la reformulación.
+Si la pregunta del usuario es ambigua o hace referencia a algo previo, intégralo en la reformulación. No inventes información.
 
 ### Historial actual:
 {conversation}
