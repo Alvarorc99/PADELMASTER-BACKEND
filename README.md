@@ -36,3 +36,11 @@ Esto abrirá directamente en el navegador predeterminado la aplicación.
 Si necesitas detener y eliminar ambos contenedores, ejecuta:
 docker stop padelmaster-backend-container padelmaster-frontend-container
 docker rm padelmaster-backend-container padelmaster-frontend-container
+
+En caso de querer visualizar los logs mientras se ejecutan la aplicación (tanto del frontend como del backend), ejecutar:
+Para el frontend:
+docker logs -f padelmaster-frontend-container
+
+Para el backend:
+docker logs -f padelmaster-backend-container
+
