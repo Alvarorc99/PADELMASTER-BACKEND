@@ -37,6 +37,10 @@ Si necesitas detener y eliminar ambos contenedores, ejecuta:
 docker stop padelmaster-backend-container padelmaster-frontend-container
 docker rm padelmaster-backend-container padelmaster-frontend-container
 
+Si lo que buscamos es volver a iniciar el contenedor, simplemente ejecutar: 
+docker start padelmaster-backend-container 
+docker start padelmaster-frontend-container
+
 En caso de querer visualizar los logs mientras se ejecutan la aplicación (tanto del frontend como del backend), ejecutar:
 Para el frontend:
 docker logs -f padelmaster-frontend-container
