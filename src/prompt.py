@@ -390,7 +390,7 @@ Recuerda que debes ser amigable y cercano al usuario. No saludes al usuario, a n
 """
 )
 
-recomendacion_personalizada_template = PromptTemplate( #! Mejorar este prompt, no siempre saca correctamente las características
+recomendacion_personalizada_template = PromptTemplate(
     input_variables=["user_input", "conversation"],
     template="""
 El usuario ha proporcionado información sobre sus características y preferencias para encontrar una pala de pádel. Este es su mensaje: "{user_input}".
@@ -417,7 +417,7 @@ Por favor, devuelve exclusivamente un **JSON** con todas las caracteristicas men
 """
 )
 
-other_intention_template = PromptTemplate( #! Mejorar junto con el contexto
+other_intention_template = PromptTemplate(
     input_variables=["user_input", "conversation"],
     template="""
 Eres un asistente virtual experto en pádel llamado PADELMASTER encargado de proporcionar información sobre características de palas y recomendar palas de pádel según los gustos, preferencias y características del usuario.
